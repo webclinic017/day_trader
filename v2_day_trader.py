@@ -10,8 +10,11 @@ import matplotlib.pyplot as plt
 import pickle
 import os.path
 import pandas_ta as pta
+import threading
+import time
+from tqdm import tqdm
 
-
+PAUSE_SIG = False
 
 class Enviroment:
     
@@ -26,13 +29,14 @@ class Enviroment:
         self.curr_chunk = 0
         self.buy_prices = []
         self.curr_money = 1000
+        self.prev_money = 1000
     
     def reset(self):
         self.curr_chunk = 0
         self.buy_prices = []
         self.curr_money = 1000
 
-    def print_current_money(self):
+    def get_current_money(self):
         
         cash = self.curr_money
         hypothetical = 0
@@ -40,7 +44,7 @@ class Enviroment:
         for buy_price in self.buy_prices:
             hypothetical += (100 * (self.chunks[self.curr_chunk][19] / buy_price))
         
-        return f"{round(cash,1)} / ({round(cash+hypothetical,1)})"
+        return round((cash+hypothetical), 2)
 
 
     # Could also end it if we didn't get over 10% return in a day
@@ -71,7 +75,7 @@ class Enviroment:
 
     def step(self, action, prev_chunk, decay):
         
-        if self.curr_chunk + 1 < int(len(self.chunks)/5):
+        if self.curr_chunk + 1 < int(len(self.chunks)):
             
             last_close = 19
             self.curr_chunk += 1
@@ -84,26 +88,27 @@ class Enviroment:
                     self.curr_money -= 100
 
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
-                print(f"     Decided to buy stock at price: {prev_chunk[last_close]} || {self.print_current_money()} \n")
+                #print(f"     Decided to buy stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
                 
 
             elif action == 2:   # Holding the stock
                 reward = 0      # Do nothing - no reward
-                print(f"     Decided to hold stock || {self.print_current_money()} \n")
+                #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
                 reward = self.get_reward(prev_chunk[last_close], decay)        # Selling based on price that the model has seen and is acting on
                 self.buy_prices = []
-                print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.print_current_money()} \n")
+                #print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
 
-                if self.curr_money < 900:
-                    return 0, True
+            
+            if self.curr_chunk > 1499 and self.curr_chunk % 1500 == 0:
                 
-                if self.curr_chunk > 499 and self.curr_chunk % 500 == 0:
-                    if self.curr_money < 1050:
-                        return 0, True
+                if self.get_current_money() < int(self.prev_money*1.01):
+                    return 0, True
+                else:
+                    self.prev_money = self.get_current_money()
+                    return reward,  False
 
-            #print(f"             Reward: {reward} \n")
             return reward,  False
         
         else:
@@ -125,7 +130,6 @@ def create_rsi(closing_price:list):
 
     rsi = pta.rsi(closing_price, length = 14)
     print(rsi)
-
 
 def create_training_chunks():
     
@@ -173,12 +177,9 @@ def create_training_chunks():
             pickle.dump(chunks_by_days, f)
 
     chunks = get_emas(chunks_by_days, 10)
-    create_rsi(closing_prices)
-    exit()
+    #create_rsi(closing_prices)
 
     return chunks
-
-
 
 def create_ema(day_average_list: list, num_days: int):
     ema_daily = []
@@ -246,20 +247,6 @@ def get_emas(chunks_by_days: dict, num_of_min):
             total_chunks.append(chunk)
 
         i += 1
-  
-    """
-    for r in ema_ranges:
-
-        x = []
-        for i in range(len(ema_ranges[r])):
-            x.append(i)
-        
-        plt.plot(x, ema_ranges[r])  # Plot the chart
-        plt.xlabel("Day Number")
-        plt.ylabel(f"ema {r}:")
-        plt.show()
-
-    """
     
     return total_chunks
 
@@ -329,13 +316,16 @@ def simulate(env: Enviroment):
 
 
 
-    for i in range(1000):
+    for i in tqdm(range(100)):
 
         done = False
         steps_to_update_target_model = 0
         env.reset()
 
         while(not done):
+
+            while PAUSE_SIG:
+                time.sleep(1)
             
             total_segment_reward += 1
             steps_to_update_target_model += 1 
@@ -356,7 +346,7 @@ def simulate(env: Enviroment):
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
             # 3. Update the Main Network using the Bellman Equation
-            if steps_to_update_target_model % 10 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+            if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                 train(env, replay_memory, model, target_model, done)            # training the main model
                 
         
@@ -364,25 +354,11 @@ def simulate(env: Enviroment):
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
         target_model.set_weights(model.get_weights())
 
-        print(f"Made it to ${env.curr_money} -  it number: {i} - epsilon: {epsilon}")
+        print(f"Made it to ${env.get_current_money()} -  it number: {i} - epsilon: {epsilon}")
         X.append(len(X) + 1)
-        y.append(env.curr_money)
+        y.append(env.get_current_money())
         total_segment_reward = 0
         
-
-
-# Maybe I want another set of neural nets
-# I have one set for when we have nothing and are looking for a stock to buy
-# Another pair for when we have a stock and are looking for when to sell? 
-
-# Implement new system where it gets 100 dollars and the game ends when we run out
-# Could also give it a time penality for holding to encourage it to actually sell or something
-
-
-#Include the currently held stocks and shit into the neurual net, along with other technical indicators
-
-# I should track total reward over each 1000 decisions or something
-
 
     plt.plot(X, y)  # Plot the chart
     plt.xlabel("Iteration Number")
@@ -405,7 +381,19 @@ def main():
 
     chunks = create_training_chunks()
     env = Enviroment(chunks)
-    simulate(env)
+
+    x = threading.Thread(target=simulate, args=(env,))
+    x.start()
+
+    while True:
+        
+        choice = input("Please enter p to pause operation and s to start")
+
+        if choice == "p":
+            PAUSE_SIG = True
+        elif choice == "s":
+            PAUSE_SIG = False
+
 
 
 
