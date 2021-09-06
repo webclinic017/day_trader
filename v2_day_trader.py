@@ -5,7 +5,6 @@ from collections import deque
 import random
 import alpaca_trade_api as tradeapi
 from datetime import date, timedelta
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pickle
 import os.path
@@ -13,6 +12,11 @@ import pandas_ta as pta
 import threading
 import time
 from tqdm import tqdm
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from matplotlib import pyplot as plt
+
 
 PAUSE_SIG = False
 
@@ -128,8 +132,25 @@ def daterange(start_date, end_date):
 
 def create_rsi(closing_price:list):
 
-    rsi = pta.rsi(closing_price, length = 14)
-    print(rsi)
+    df = pd.DataFrame()
+    df["close"] = pd.Series(closing_price)
+
+    close_delta = df['close'].diff()
+    up = close_delta.clip(lower=0)
+    down = -1 * close_delta.clip(upper=0)
+
+    ma_up = up.ewm(com = 14 - 1, adjust=True, min_periods = 14).mean()
+    ma_down = down.ewm(com = 14 - 1, adjust=True, min_periods = 14).mean()
+
+    rsi = ma_up / ma_down
+    rsi = 100 - (100/(1 + rsi))
+
+    rsi = np.array(rsi)
+    nan =np.isnan(rsi)
+    rsi[nan]=0.0
+
+    return rsi
+  
 
 def create_training_chunks():
     
@@ -148,7 +169,6 @@ def create_training_chunks():
 
         chunks = []
         chunks_by_days = {}
-        closing_prices = []
 
         for i in tqdm(range(int(len(dates)))):
             
@@ -164,7 +184,6 @@ def create_training_chunks():
                         for price in barset[k:k+10]:
                             chunk.append(price.o)
                             chunk.append(price.c)
-                            closing_prices.append(price.c)
                         
                         chunks.append(chunk)
 
@@ -176,10 +195,32 @@ def create_training_chunks():
         with open("data.pkl", 'wb') as f:
             pickle.dump(chunks_by_days, f)
 
-    chunks = get_emas(chunks_by_days, 10)
-    #create_rsi(closing_prices)
+    closing_prices = get_closing_daily_price(chunks_by_days)
+    rsi = create_rsi(closing_prices)
+    chunks = get_emas(chunks_by_days, 10, rsi)
 
     return chunks
+
+def get_closing_daily_price(chunks_by_days: dict):
+
+    closing_prices = []
+
+    for day in chunks_by_days:
+        
+        closing_day = []
+        chunks = chunks_by_days[day]
+
+        for chunk in chunks:
+
+            closing_day.append(chunk[1])
+            for i in range(len(chunk)):
+                if i > 2 and i % 2 == 1:
+                    closing_day.append(chunk[i])
+        
+        closing_prices.append(round((sum(closing_day)/len(closing_day)),2))
+    
+    return closing_prices
+
 
 def create_ema(day_average_list: list, num_days: int):
     ema_daily = []
@@ -205,13 +246,13 @@ def create_ema(day_average_list: list, num_days: int):
     
     return ema_daily
 
-def get_emas(chunks_by_days: dict, num_of_min):
+def get_emas(chunks_by_days: dict, num_of_min, rsi: list):
 
    # Theres a big chunk that should go here, I think making daily average list?
     day_average_list = []
 
     for day in chunks_by_days:
-        
+
         chunks = chunks_by_days[day]
         day_total = 0
         day_avg = 0
@@ -238,12 +279,15 @@ def get_emas(chunks_by_days: dict, num_of_min):
     i = 0
     for k in range(49, len(chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
         
+        curr_rsi = rsi[i]
         for chunk in chunks_by_days[list(chunks_by_days.keys())[k]]: 
             
             chunk.append(ema_ranges[49][i])
             chunk.append(ema_ranges[19][i])
             chunk.append(ema_ranges[9][i])
             chunk.append(ema_ranges[4][i])
+            chunk.append(curr_rsi)
+
             total_chunks.append(chunk)
 
         i += 1
@@ -301,15 +345,15 @@ def simulate(env: Enviroment):
     epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-    decay = 0.005       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
+    decay = 0.025       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
     episode = 0
     total_segment_reward = 0
 
     X = []
     y = []
 
-    model = agent((26,), 3)
-    target_model = agent((26,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    model = agent((27,), 3)
+    target_model = agent((27,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
     target_model.set_weights(model.get_weights())
     
     replay_memory = deque(maxlen=100_000)
@@ -360,9 +404,12 @@ def simulate(env: Enviroment):
         total_segment_reward = 0
         
 
+    X, Y = np.array(X).reshape(-1,1), np.array(y).reshape(-1,1)
     plt.plot(X, y)  # Plot the chart
     plt.xlabel("Iteration Number")
     plt.ylabel("Number of decisions made")
+    plt.show()
+    plt.plot( X, LinearRegression().fit(X, Y).predict(X))
     plt.show()
 
 
