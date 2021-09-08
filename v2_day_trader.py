@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import matplotlib.pyplot as plt
 import pickle
 import os.path
+import os
 import pandas_ta as pta
 import threading
 import time
@@ -16,6 +17,10 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from matplotlib import pyplot as plt
+import shutil
+import matplotlib.pyplot as plt
+import numpy.polynomial.polynomial as poly
+
 
 
 PAUSE_SIG = False
@@ -77,10 +82,47 @@ class Enviroment:
 
         return curr_state
 
-    def step(self, action, prev_chunk, decay):
-        
+    def test_step(self, action, prev_chunk, decay):
+       
         if self.curr_chunk + 1 < int(len(self.chunks)):
-            
+ 
+            last_close = 19
+            self.curr_chunk += 1
+            reward = 0
+
+            if action == 1:     # Buying a share of the stock
+
+                if self.curr_money > 100:
+                    self.buy_prices.append(prev_chunk[last_close])       # Appending current price we bought the stock at for previous chunk 
+                    self.curr_money -= 100
+
+                reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
+                print(f"     Decided to buy stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
+                
+
+            elif action == 2:   # Holding the stock
+                reward = 0      # Do nothing - no reward
+                print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
+
+            elif action == 3:   # Selling the stock
+                reward = self.get_reward(prev_chunk[last_close], decay)        # Selling based on price that the model has seen and is acting on
+                self.buy_prices = []
+                print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
+
+            if self.curr_chunk > 2999 and self.curr_chunk % 3000 == 0:        # Checking if we made 4% the past month
+
+                if self.get_current_money() > int(self.prev_money*1.02):
+                    return 10 * reward, False
+
+            return reward,  False
+        
+        else:
+            return 0, True
+
+    def step(self, action, prev_chunk, decay):
+
+        if self.curr_chunk + 1 < int(len(self.chunks)):
+ 
             last_close = 19
             self.curr_chunk += 1
             reward = 0
@@ -105,10 +147,20 @@ class Enviroment:
                 #print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
 
             
-            if self.curr_chunk > 1499 and self.curr_chunk % 1500 == 0:
+            if self.curr_chunk == 1500:
                 
                 if self.get_current_money() < int(self.prev_money*1.01):
                     return 0, True
+
+                else:
+                    self.prev_money = self.get_current_money()
+                    return reward,  False
+
+            elif self.curr_chunk > 5999 and self.curr_chunk % 6000 == 0:        # Checking if we made 4% the past month
+
+                if self.get_current_money() < int(self.prev_money*1.04):
+                    return 0, True
+
                 else:
                     self.prev_money = self.get_current_money()
                     return reward,  False
@@ -118,6 +170,7 @@ class Enviroment:
         else:
             return 0, True
 
+# Need to clean the data, restrict the hours were calling from the api so each day has a uniform number of hours, can't trade afterhours
 
     def get_random_action(self):
         return random.randint(1,3)
@@ -150,7 +203,66 @@ def create_rsi(closing_price:list):
     rsi[nan]=0.0
 
     return rsi
-  
+
+# RSI is somehow making it shit?
+
+def create_testing_chunks():
+    
+    if os.path.isfile("cache/test_data.pkl"):
+        with open("cache/test_data.pkl", "rb") as f:
+            chunks_by_days =  pickle.load(f)
+    
+    else:
+
+        api = tradeapi.REST()
+        start_date = date(2021, 6, 7)
+        end_date = date(2021, 9, 7)
+
+        dates = []
+        for single_date in daterange(start_date, end_date):
+            dates.append(str(single_date) + 'T00:00:00-00:00')
+
+        chunks = []
+        chunks_by_days = {}
+
+        for i in tqdm(range(int(len(dates)))):
+            
+            if i!=0: 
+                barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i-1], end=dates[i]) # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
+                barset = barset["SPY"]
+                
+                for k in range(len(barset)):
+
+                    if k+10 < len(barset):              # Creating segments of 10 blocks, moving by one each time
+
+                        chunk = []
+                        for price in barset[k:k+10]:
+                            chunk.append(price.o)
+                            chunk.append(price.c)
+                        
+                        chunks.append(chunk)
+
+                        if dates[i-1] in chunks_by_days:
+                            chunks_by_days[dates[i-1]].append(chunk)
+                        else:
+                            chunks_by_days[dates[i-1]] = [chunk]
+        
+        with open("cache/test_data.pkl", 'wb') as f:
+            pickle.dump(chunks_by_days, f)
+
+
+    for day in chunks_by_days:
+        chunks = chunks_by_days[day]
+
+        for chunk in chunks:
+            print(chunk)
+
+    #closing_prices = get_closing_daily_price(chunks_by_days)
+    #rsi = create_rsi(closing_prices)
+    rsi = []
+    chunks = get_emas(chunks_by_days, 10, rsi)
+
+    return chunks
 
 def create_training_chunks():
     
@@ -195,8 +307,9 @@ def create_training_chunks():
         with open("data.pkl", 'wb') as f:
             pickle.dump(chunks_by_days, f)
 
-    closing_prices = get_closing_daily_price(chunks_by_days)
-    rsi = create_rsi(closing_prices)
+    #closing_prices = get_closing_daily_price(chunks_by_days)
+    #rsi = create_rsi(closing_prices)
+    rsi = []
     chunks = get_emas(chunks_by_days, 10, rsi)
 
     return chunks
@@ -220,7 +333,6 @@ def get_closing_daily_price(chunks_by_days: dict):
         closing_prices.append(round((sum(closing_day)/len(closing_day)),2))
     
     return closing_prices
-
 
 def create_ema(day_average_list: list, num_days: int):
     ema_daily = []
@@ -279,14 +391,14 @@ def get_emas(chunks_by_days: dict, num_of_min, rsi: list):
     i = 0
     for k in range(49, len(chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
         
-        curr_rsi = rsi[i]
+        #curr_rsi = rsi[i]
         for chunk in chunks_by_days[list(chunks_by_days.keys())[k]]: 
             
             chunk.append(ema_ranges[49][i])
             chunk.append(ema_ranges[19][i])
             chunk.append(ema_ranges[9][i])
             chunk.append(ema_ranges[4][i])
-            chunk.append(curr_rsi)
+            #chunk.append(curr_rsi)
 
             total_chunks.append(chunk)
 
@@ -340,27 +452,49 @@ def train(env, replay_memory, model, target_model, done):
         Y.append(current_qs)            #
     model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
+def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list):
+    
+    model.save(f"model_{it_num}")
+
+    target_model.save(f"target_model_{it_num}")
+
+    with open(f"replay_mem_{it_num}.pkl", 'wb') as f:
+        pickle.dump(replay_mem, f)
+    
+    with open(f"X_{it_num}.pkl", 'wb') as f:
+        pickle.dump(X, f)
+    
+    with open(f"Y_{it_num}.pkl", 'wb') as f:
+        pickle.dump(Y, f)
+    
+    if it_num != 0:
+        shutil.rmtree(f"model_{it_num-1}")
+        shutil.rmtree(f"target_model_{it_num-1}")
+        os.remove(f"replay_mem_{it_num-1}.pkl")
+        os.remove(f"X_{it_num-1}.pkl")
+        os.remove(f"Y_{it_num-1}.pkl")
+    
 def simulate(env: Enviroment):
 
     epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-    decay = 0.025       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
+    decay = 0.01       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
     episode = 0
     total_segment_reward = 0
 
     X = []
     y = []
 
-    model = agent((27,), 3)
-    target_model = agent((27,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    model = agent((26,), 3)
+    target_model = agent((26,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
     target_model.set_weights(model.get_weights())
     
     replay_memory = deque(maxlen=100_000)
 
 
 
-    for i in tqdm(range(100)):
+    for i in tqdm(range(1000)):
 
         done = False
         steps_to_update_target_model = 0
@@ -368,8 +502,6 @@ def simulate(env: Enviroment):
 
         while(not done):
 
-            while PAUSE_SIG:
-                time.sleep(1)
             
             total_segment_reward += 1
             steps_to_update_target_model += 1 
@@ -402,6 +534,8 @@ def simulate(env: Enviroment):
         X.append(len(X) + 1)
         y.append(env.get_current_money())
         total_segment_reward = 0
+
+        save_state(model, target_model, (episode-1), replay_memory, X, y)
         
 
     X, Y = np.array(X).reshape(-1,1), np.array(y).reshape(-1,1)
@@ -421,29 +555,88 @@ def simulate(env: Enviroment):
     with open("old_y.pkl", 'wb') as f:
         pickle.dump(y, f)
 
+def test(env):
+
+    epsilon = 0.05 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
+    max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
+    min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
+    decay = 0.01       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
+    episode = 0
+
+    done = False
+
+    model = keras.models.load_model(f"cache/model_{431}")
+    target_model = keras.models.load_model(f"cache/target_model_{431}") # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    with open(f"cache/replay_mem_{431}.pkl", 'rb') as f:
+        replay_memory = pickle.load(f)
+    
+    i = 0
+    while(not done):
+        
+        done = False
+        steps_to_update_target_model = 0
+        env.reset()
+        
+        steps_to_update_target_model += 1 
+        random_number = np.random.rand()
+        current_state = env.get_current_state()
+        
+
+        if random_number <= epsilon:  # Explore  
+            action = env.get_random_action() # Just randomly choosing an action
+        
+        else: #Exploitting
+            current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+            predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+            action = np.argmax(predicted) 
+        
+        reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+        new_state = env.get_current_state()                 # Getting the next step
+        replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
+
+        # 3. Update the Main Network using the Bellman Equation
+        if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+            train(env, replay_memory, model, target_model, done)            # training the main model
+        
+        if steps_to_update_target_model % 100 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+            episode += 1
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+            target_model.set_weights(model.get_weights())
+        
+
+        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / 5817")
+        i += 1
+    
+def trend_analysis():
+
+    with open("cache/X(3)_267.pkl", 'rb') as f:
+        X = np.array(pickle.load(f))
+    
+    with open("cache/Y(3)_267.pkl", 'rb') as f:
+        Y = np.array(pickle.load(f))
+
+    plt.plot(X,Y,'o')
+    coefs = poly.polyfit(X, Y, 1)
+    ffit = poly.polyval(X, coefs)
+    plt.plot(X, ffit)
+
+    plt.show()
+
+
 
 
 
 def main():
 
-    chunks = create_training_chunks()
-    env = Enviroment(chunks)
+    #chunks = create_training_chunks()
+   # env = Enviroment(chunks)
+   # simulate(env)
 
-    x = threading.Thread(target=simulate, args=(env,))
-    x.start()
+   #chunks = create_testing_chunks()
+   #env = Enviroment(chunks)
+   #test(env)
 
-    while True:
-        
-        choice = input("Please enter p to pause operation and s to start")
-
-        if choice == "p":
-            PAUSE_SIG = True
-        elif choice == "s":
-            PAUSE_SIG = False
-
-
-
-
+   trend_analysis()
 
 
 
