@@ -41,7 +41,7 @@ class Enviroment:
         self.prev_money = 1000
     
     def reset(self):
-        self.curr_chunk = 0
+        self.curr_chunk = random.randint(0,(len(self.chunks) - 1))
         self.buy_prices = []
         self.curr_money = 1000
 
@@ -147,16 +147,7 @@ class Enviroment:
                 #print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
 
             
-            if self.curr_chunk == 1500:
-                
-                if self.get_current_money() < int(self.prev_money*1.01):
-                    return 0, True
-
-                else:
-                    self.prev_money = self.get_current_money()
-                    return reward,  False
-
-            elif self.curr_chunk > 5999 and self.curr_chunk % 6000 == 0:        # Checking if we made 4% the past month
+            if self.curr_chunk > 5999 and self.curr_chunk % 6000 == 0:        # Checking if we made 4% the past month
 
                 if self.get_current_money() < int(self.prev_money*1.04):
                     return 0, True
@@ -168,7 +159,9 @@ class Enviroment:
             return reward,  False
         
         else:
-            return 0, True
+            self.curr_chunk = random.randint(0,(len(self.chunks) - 1))          # Wrapping around to new random location
+            return self.step(action, prev_chunk, decay)
+            
 
 # Need to clean the data, restrict the hours were calling from the api so each day has a uniform number of hours, can't trade afterhours
 
@@ -277,42 +270,94 @@ def create_training_chunks():
 
         dates = []
         for single_date in daterange(start_date, end_date):
-            dates.append(str(single_date) + 'T00:00:00-00:00')
+            dates.append(str(single_date))
 
         chunks = []
         chunks_by_days = {}
-
+        
+        skipped_dates = []
         for i in tqdm(range(int(len(dates)))):
             
-            if i!=0: 
-                barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i-1], end=dates[i]) # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                barset = barset["SPY"]
-                
-                for k in range(len(barset)):
+            
+            barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00') # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
+            barset = barset["SPY"]
+            
+            print(len(barset))
+            
+            if len(barset) == 0 or len(barset) < 330:
+                skipped_dates.append(dates[i])
+                print(f"Skipping date: {dates[i]} because it was length: {len(barset)}")
+                continue
+            
+            for k in range(len(barset)):
 
-                    if k+10 < len(barset):              # Creating segments of 10 blocks, moving by one each time
+                if k+10 < len(barset):              # Creating segments of 10 blocks, moving by one each time
 
-                        chunk = []
-                        for price in barset[k:k+10]:
-                            chunk.append(price.o)
-                            chunk.append(price.c)
-                        
-                        chunks.append(chunk)
+                    chunk = []
+                    for price in barset[k:k+10]:
+                        chunk.append(price.o)
+                        chunk.append(price.c)
+                    
+                    chunks.append(chunk)
 
-                        if dates[i-1] in chunks_by_days:
-                            chunks_by_days[dates[i-1]].append(chunk)
-                        else:
-                            chunks_by_days[dates[i-1]] = [chunk]
-        
+                    if dates[i-1] in chunks_by_days:
+                        chunks_by_days[dates[i-1]].append(chunk)
+                    else:
+                        chunks_by_days[dates[i-1]] = [chunk]
+
         with open("data.pkl", 'wb') as f:
             pickle.dump(chunks_by_days, f)
 
     #closing_prices = get_closing_daily_price(chunks_by_days)
     #rsi = create_rsi(closing_prices)
+    new_chunks_by_days = transform_relative(chunks_by_days)
     rsi = []
-    chunks = get_emas(chunks_by_days, 10, rsi)
+    chunks = get_emas(chunks_by_days, new_chunks_by_days, 10, rsi)
 
     return chunks
+
+def transform_relative(chunks_by_days):
+
+    prev_price = 0
+    new_chunks_by_days = {}
+    
+    for day in chunks_by_days:
+
+        chunks = chunks_by_days[day]
+
+        new_chunks = []
+
+        for chunk in chunks:
+
+            new_chunk = []
+            closing_chunk = []
+
+            
+            closing_chunk.append(chunk[1])
+            for i in range(len(chunk)):
+                if i > 2 and i % 2 == 1:
+                    closing_chunk.append(chunk[i])
+
+            for close_price in closing_chunk:
+                
+                if prev_price != 0:
+
+                    relative_price = 1 - (close_price/prev_price)
+                    relative_price *= 100000
+                    new_chunk.append(round(relative_price, 2))
+                    prev_price = close_price
+                
+                else:
+                    relative_price = 0
+                    new_chunk.append(relative_price)
+                    prev_price = close_price
+                
+            
+            new_chunks.append(new_chunk)
+        
+        new_chunks_by_days[day] = new_chunks
+    
+    return new_chunks_by_days                         
 
 def get_closing_daily_price(chunks_by_days: dict):
 
@@ -358,7 +403,7 @@ def create_ema(day_average_list: list, num_days: int):
     
     return ema_daily
 
-def get_emas(chunks_by_days: dict, num_of_min, rsi: list):
+def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min, rsi: list):
 
    # Theres a big chunk that should go here, I think making daily average list?
     day_average_list = []
@@ -389,10 +434,10 @@ def get_emas(chunks_by_days: dict, num_of_min, rsi: list):
    
         
     i = 0
-    for k in range(49, len(chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
+    for k in range(49, len(new_chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
         
         #curr_rsi = rsi[i]
-        for chunk in chunks_by_days[list(chunks_by_days.keys())[k]]: 
+        for chunk in new_chunks_by_days[list(new_chunks_by_days.keys())[k]]: 
             
             chunk.append(ema_ranges[49][i])
             chunk.append(ema_ranges[19][i])
@@ -628,7 +673,7 @@ def trend_analysis():
 
 def main():
 
-    #chunks = create_training_chunks()
+    chunks = create_training_chunks()
    # env = Enviroment(chunks)
    # simulate(env)
 
@@ -636,7 +681,7 @@ def main():
    #env = Enviroment(chunks)
    #test(env)
 
-   trend_analysis()
+   #trend_analysis()
 
 
 
