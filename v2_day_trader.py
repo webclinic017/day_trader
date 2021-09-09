@@ -394,6 +394,14 @@ def create_training_chunks():
                         chunks_by_days_BND[dates[i-1]].append(BND_barset[k:k+10])
                     else:
                         chunks_by_days_BND[dates[i-1]] = [BND_barset[k:k+10]]
+                    
+                    if not (chunks_by_days_SPY[dates[i-1]][-1] and chunks_by_days_VTI[dates[i-1]][-1]
+                        and chunks_by_days_VXUS[dates[i-1]][-1] and chunks_by_days_BND[dates[i-1]][-1]):
+                    
+                        chunks_by_days_SPY[dates[i-1]].pop()
+                        chunks_by_days_VTI[dates[i-1]].pop()
+                        chunks_by_days_VXUS[dates[i-1]].pop()
+                        chunks_by_days_BND[dates[i-1]].pop()
 
         
         with open("chunks_by_days_SPY.pkl", 'wb') as f:
@@ -542,7 +550,7 @@ def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min):
             for i in range(len(chunk)):
                 day_total += chunk[i]
         
-        day_avg = day_total / (len(chunks) * num_of_min)
+        day_avg = day_total / (len(chunk) * num_of_min)
         day_average_list.append(day_avg)
 
     
