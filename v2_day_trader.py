@@ -20,6 +20,8 @@ from matplotlib import pyplot as plt
 import shutil
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
+from dateutil import parser
+from datetime import datetime
 
 
 
@@ -31,14 +33,16 @@ class Enviroment:
     curr_chunk: int
     buy_prices: list
     curr_money: int
+    closing_prices: list
 
-    def __init__(self, chunks):
+    def __init__(self, chunks, closing_prices):
         
         self.chunks = chunks
         self.curr_chunk = 0
         self.buy_prices = []
         self.curr_money = 1000
         self.prev_money = 1000
+        self.closing_prices = closing_prices
     
     def reset(self):
         self.curr_chunk = random.randint(0,(len(self.chunks) - 1))
@@ -51,7 +55,7 @@ class Enviroment:
         hypothetical = 0
 
         for buy_price in self.buy_prices:
-            hypothetical += (100 * (self.chunks[self.curr_chunk][19] / buy_price))
+            hypothetical += (100 * (self.closing_prices[self.curr_chunk] / buy_price))
         
         return round((cash+hypothetical), 2)
 
@@ -123,14 +127,14 @@ class Enviroment:
 
         if self.curr_chunk + 1 < int(len(self.chunks)):
  
-            last_close = 19
+            last_close = 9
             self.curr_chunk += 1
             reward = 0
 
             if action == 1:     # Buying a share of the stock
 
                 if self.curr_money > 100:
-                    self.buy_prices.append(prev_chunk[last_close])       # Appending current price we bought the stock at for previous chunk 
+                    self.buy_prices.append(self.closing_prices[self.curr_chunk -1])       # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 100
 
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
@@ -142,14 +146,14 @@ class Enviroment:
                 #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
-                reward = self.get_reward(prev_chunk[last_close], decay)        # Selling based on price that the model has seen and is acting on
+                reward = self.get_reward(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
                 self.buy_prices = []
                 #print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
 
             
-            if self.curr_chunk > 5999 and self.curr_chunk % 6000 == 0:        # Checking if we made 4% the past month
+            if self.curr_chunk > 1654 and self.curr_chunk % 1655 == 0:        # Checking if we made 4% the past month
 
-                if self.get_current_money() < int(self.prev_money*1.04):
+                if self.get_current_money() < int(self.prev_money*1.01):
                     return 0, True
 
                 else:
@@ -198,6 +202,66 @@ def create_rsi(closing_price:list):
     return rsi
 
 # RSI is somehow making it shit?
+
+def fill_df(df: pd.DataFrame(), ticker: str) -> list:
+
+    times = list(df.index)
+    new_times = []
+
+    if times:
+        current_closing_prices = df[(ticker, 'close')]
+        filled_closing_prices = []
+
+        starting_time = str(times[0]).split(" ")[1]
+
+        if starting_time != "10:00:00-04:00":
+            
+            curr_last_min = parser.parse(str(times[0]).split(" ")[1])
+            actual_last_min = parser.parse("10:00:00-04:00")
+
+            diff = int((curr_last_min - actual_last_min).seconds/60)
+
+            if diff != 0:
+                for k in range(diff):
+                    new_times.append(times[0] + timedelta(minutes=k+1))
+                    filled_closing_prices.append(current_closing_prices[0])
+
+
+        for i in range(len(times)):
+
+            filled_closing_prices.append(current_closing_prices[i])
+            new_times.append(times[i])
+
+            if i+1 < len(times):
+                
+                diff = int((times[i+1] - times[i]).seconds / 60)
+
+                if diff != 1:
+                    for j in range(diff - 1):
+                        filled_closing_prices.append(current_closing_prices[i])
+                        new_times.append(times[i] + timedelta(minutes=j+1))
+            
+            else:
+                
+                curr_last_min = parser.parse(str(times[i]).split(" ")[1])
+                actual_last_min = parser.parse("15:30:00-04:00")
+
+                diff = int((actual_last_min - curr_last_min).seconds/60)
+
+                if diff != 0:
+                    for k in range(diff):
+                        new_times.append(times[i] + timedelta(minutes=k+1))
+                        filled_closing_prices.append(current_closing_prices[i])
+
+        
+        if len(filled_closing_prices) != 331:
+            for t in new_times:
+                print(t)
+        return filled_closing_prices
+    
+    else: 
+        return []
+
 
 def create_testing_chunks():
     
@@ -257,11 +321,20 @@ def create_testing_chunks():
 
     return chunks
 
+
 def create_training_chunks():
     
-    if os.path.isfile("data.pkl"):
-        with open("data.pkl", "rb") as f:
-            chunks_by_days =  pickle.load(f)
+    if os.path.isfile("chunks_by_days_SPY.pkl"):
+        with open("chunks_by_days_SPY.pkl", "rb") as f:
+            chunks_by_days_SPY =  pickle.load(f)
+        with open("chunks_by_days_VTI.pkl", "rb") as f:
+            chunks_by_days_VTI =  pickle.load(f)
+        with open("chunks_by_days_VXUS.pkl", "rb") as f:
+            chunks_by_days_VXUS =  pickle.load(f)
+        with open("chunks_by_days_BND.pkl", "rb") as f:
+            chunks_by_days_BND =  pickle.load(f)
+
+
     else:
 
         api = tradeapi.REST()
@@ -273,56 +346,110 @@ def create_training_chunks():
             dates.append(str(single_date))
 
         chunks = []
-        chunks_by_days = {}
+        chunks_by_days_SPY = {}
+        chunks_by_days_VTI = {}
+        chunks_by_days_VXUS = {}
+        chunks_by_days_BND = {}
         
         skipped_dates = []
         for i in tqdm(range(int(len(dates)))):
             
+            SPY_barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
+            SPY_barset = fill_df(SPY_barset, 'SPY')
+
+            VTI_barset = api.get_barset(symbols=['VTI'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 39
+            VTI_barset = fill_df(VTI_barset, 'VTI')
+
+            VXUS_barset = api.get_barset(symbols=['VXUS'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
+            VXUS_barset = fill_df(VXUS_barset, 'VXUS')
+
+            BND_barset = api.get_barset(symbols=['BND'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
+            BND_barset = fill_df(BND_barset, 'BND')
+       
             
-            barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00') # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-            barset = barset["SPY"]
-            
-            print(len(barset))
-            
-            if len(barset) == 0 or len(barset) < 330:
+            if len(SPY_barset) == 0:
                 skipped_dates.append(dates[i])
-                print(f"Skipping date: {dates[i]} because it was length: {len(barset)}")
                 continue
             
-            for k in range(len(barset)):
+            for k in range(331):
 
-                if k+10 < len(barset):              # Creating segments of 10 blocks, moving by one each time
+                if k+10 < 331:              # Creating segments of 10 blocks, moving by one each time
 
-                    chunk = []
-                    for price in barset[k:k+10]:
-                        chunk.append(price.o)
-                        chunk.append(price.c)
-                    
-                    chunks.append(chunk)
-
-                    if dates[i-1] in chunks_by_days:
-                        chunks_by_days[dates[i-1]].append(chunk)
+                    if dates[i-1] in chunks_by_days_SPY:
+                        chunks_by_days_SPY[dates[i-1]].append(SPY_barset[k:k+10])
                     else:
-                        chunks_by_days[dates[i-1]] = [chunk]
+                        chunks_by_days_SPY[dates[i-1]] = [SPY_barset[k:k+10]]
+                    
+                    if dates[i-1] in chunks_by_days_VTI:
+                        chunks_by_days_VTI[dates[i-1]].append(VTI_barset[k:k+10])
+                    else:
+                        chunks_by_days_VTI[dates[i-1]] = [VTI_barset[k:k+10]]
+                    
+                    if dates[i-1] in chunks_by_days_VXUS:
+                        chunks_by_days_VXUS[dates[i-1]].append(VXUS_barset[k:k+10])
+                    else:
+                        chunks_by_days_VXUS[dates[i-1]] = [VXUS_barset[k:k+10]]
+                    
+                    if dates[i-1] in chunks_by_days_BND:
+                        chunks_by_days_BND[dates[i-1]].append(BND_barset[k:k+10])
+                    else:
+                        chunks_by_days_BND[dates[i-1]] = [BND_barset[k:k+10]]
 
-        with open("data.pkl", 'wb') as f:
-            pickle.dump(chunks_by_days, f)
+        
+        with open("chunks_by_days_SPY.pkl", 'wb') as f:
+            pickle.dump(chunks_by_days_SPY, f)
+        with open("chunks_by_days_VTI.pkl", 'wb') as f:
+            pickle.dump(chunks_by_days_VTI, f)
+        with open("chunks_by_days_VXUS.pkl", 'wb') as f:
+            pickle.dump(chunks_by_days_VXUS, f)
+        with open("chunks_by_days_BND.pkl", 'wb') as f:
+            pickle.dump(chunks_by_days_BND, f)
 
-    #closing_prices = get_closing_daily_price(chunks_by_days)
-    #rsi = create_rsi(closing_prices)
-    new_chunks_by_days = transform_relative(chunks_by_days)
-    rsi = []
-    chunks = get_emas(chunks_by_days, new_chunks_by_days, 10, rsi)
+    new_chunks_by_days_SPY, closing_prices = transform_relative(chunks_by_days_SPY, True)
+    new_chunks_by_days_VTI = transform_relative(chunks_by_days_VTI)
+    new_chunks_by_days_VXUS = transform_relative(chunks_by_days_VXUS)
+    new_chunks_by_days_BND = transform_relative(chunks_by_days_BND)
 
-    return chunks
+    SPY_chunks = get_emas(chunks_by_days_SPY, new_chunks_by_days_SPY, 10)
+    VTI_chunks = get_emas(chunks_by_days_VTI, new_chunks_by_days_VTI, 10)
+    VXUS_chunks = get_emas(chunks_by_days_VXUS, new_chunks_by_days_VXUS, 10)
+    BND_chunks = get_emas(chunks_by_days_BND, new_chunks_by_days_BND, 10)
 
-def transform_relative(chunks_by_days):
+    chunks = [SPY_chunks, VTI_chunks, VXUS_chunks, BND_chunks]
+
+    total_chunks = combine_chunks(chunks)
+
+    return total_chunks, closing_prices
+
+            
+def combine_chunks(chunks: list):
+
+    SPY_chunks = chunks[0]
+    chunks.pop(0)
+    total_chunks = []
+
+    for i in range(len(SPY_chunks)):
+        
+        curr_chunk = SPY_chunks[i]
+
+        for j in range(len(chunks)):
+            curr_chunk += chunks[j][i]
+        
+        total_chunks.append(curr_chunk)
+    
+    return total_chunks
+
+
+def transform_relative(chunks_by_days, spy: bool = False):
 
     prev_price = 0
     new_chunks_by_days = {}
+    closing_prices = []
     
+    i = 0
     for day in chunks_by_days:
 
+        i += 1
         chunks = chunks_by_days[day]
 
         new_chunks = []
@@ -330,15 +457,11 @@ def transform_relative(chunks_by_days):
         for chunk in chunks:
 
             new_chunk = []
-            closing_chunk = []
 
-            
-            closing_chunk.append(chunk[1])
-            for i in range(len(chunk)):
-                if i > 2 and i % 2 == 1:
-                    closing_chunk.append(chunk[i])
+            if spy and i-1 > 48:            
+                closing_prices.append(chunk[-1])
 
-            for close_price in closing_chunk:
+            for close_price in chunk:
                 
                 if prev_price != 0:
 
@@ -356,8 +479,11 @@ def transform_relative(chunks_by_days):
             new_chunks.append(new_chunk)
         
         new_chunks_by_days[day] = new_chunks
-    
-    return new_chunks_by_days                         
+    if spy:
+        return new_chunks_by_days, closing_prices
+
+    else:
+        return new_chunks_by_days                         
 
 def get_closing_daily_price(chunks_by_days: dict):
 
@@ -370,10 +496,8 @@ def get_closing_daily_price(chunks_by_days: dict):
 
         for chunk in chunks:
 
-            closing_day.append(chunk[1])
             for i in range(len(chunk)):
-                if i > 2 and i % 2 == 1:
-                    closing_day.append(chunk[i])
+                closing_day.append(chunk[i])
         
         closing_prices.append(round((sum(closing_day)/len(closing_day)),2))
     
@@ -403,7 +527,7 @@ def create_ema(day_average_list: list, num_days: int):
     
     return ema_daily
 
-def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min, rsi: list):
+def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min):
 
    # Theres a big chunk that should go here, I think making daily average list?
     day_average_list = []
@@ -416,8 +540,7 @@ def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min, rsi: li
 
         for chunk in chunks:
             for i in range(len(chunk)):
-                if i%2 != 0 and i != 0:
-                    day_total += chunk[i]
+                day_total += chunk[i]
         
         day_avg = day_total / (len(chunks) * num_of_min)
         day_average_list.append(day_avg)
@@ -436,14 +559,12 @@ def get_emas(chunks_by_days: dict, new_chunks_by_days: dict, num_of_min, rsi: li
     i = 0
     for k in range(49, len(new_chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
         
-        #curr_rsi = rsi[i]
         for chunk in new_chunks_by_days[list(new_chunks_by_days.keys())[k]]: 
             
             chunk.append(ema_ranges[49][i])
             chunk.append(ema_ranges[19][i])
             chunk.append(ema_ranges[9][i])
             chunk.append(ema_ranges[4][i])
-            #chunk.append(curr_rsi)
 
             total_chunks.append(chunk)
 
@@ -531,8 +652,8 @@ def simulate(env: Enviroment):
     X = []
     y = []
 
-    model = agent((26,), 3)
-    target_model = agent((26,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    model = agent((58,), 3)
+    target_model = agent((58,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
     target_model.set_weights(model.get_weights())
     
     replay_memory = deque(maxlen=100_000)
@@ -649,19 +770,19 @@ def test(env):
             target_model.set_weights(model.get_weights())
         
 
-        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / 5817")
+        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / 5817 - epsilon: {epsilon}")
         i += 1
     
 def trend_analysis():
 
-    with open("cache/X(3)_267.pkl", 'rb') as f:
+    with open("results/X(3)_301.pkl", 'rb') as f:
         X = np.array(pickle.load(f))
     
-    with open("cache/Y(3)_267.pkl", 'rb') as f:
+    with open("results/Y(3)_301.pkl", 'rb') as f:
         Y = np.array(pickle.load(f))
 
     plt.plot(X,Y,'o')
-    coefs = poly.polyfit(X, Y, 1)
+    coefs = poly.polyfit(X, Y, 10)
     ffit = poly.polyval(X, coefs)
     plt.plot(X, ffit)
 
@@ -673,9 +794,9 @@ def trend_analysis():
 
 def main():
 
-    chunks = create_training_chunks()
-   # env = Enviroment(chunks)
-   # simulate(env)
+    chunks, closing_prices = create_training_chunks()
+    env = Enviroment(chunks, closing_prices)
+    simulate(env)
 
    #chunks = create_testing_chunks()
    #env = Enviroment(chunks)
