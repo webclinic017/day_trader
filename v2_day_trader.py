@@ -61,6 +61,14 @@ class Enviroment:
         self.goal_profit = 1005
         self.num_chunks = 0
 
+    def get_past_10min_avg(self):
+
+        past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        total = sum(past_10min)
+        avg = total/len(past_10min)
+
+        return avg
+
     def get_current_money(self):
         
         cash = self.curr_money
@@ -91,8 +99,8 @@ class Enviroment:
 
     def get_current_state(self):
         
-        
         curr_state = np.copy(self.chunks[self.curr_chunk])
+        curr_state = np.append(curr_state, len(self.buy_prices))
         curr_state = np.append(curr_state, self.curr_money)
         curr_state = np.append(curr_state, self.num_chunks)
         curr_state = np.append(curr_state, self.goal_profit)
@@ -156,7 +164,14 @@ class Enviroment:
                 
 
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
-                reward = 0      # Do nothing - no reward
+
+                if self.buy_prices: # only if I'm currently holding stock
+                    past_avg = self.get_past_10min_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = current_price - past_avg  
+                else:
+                    reward = 0    
+                
                 #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
@@ -478,9 +493,9 @@ def make_stationary(prices: dict, get_close: bool = False):
     chunks = []
     for i in range(len(prices)):
         
-        if i+100 < len(prices):
-            chunks.append(prices[i:i+100])
-            closing_prices.append(prices[i:i+100][-1])
+        if i+10 < len(prices):
+            chunks.append(prices[i:i+10])
+            closing_prices.append(prices[i:i+10][-1])
     
     if get_close:
         return chunks, closing_prices
@@ -677,29 +692,29 @@ def train(env, replay_memory, model, target_model, done):
 
 def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
     
-    model.save(f"model_2_{it_num}")
+    model.save(f"model_4_{it_num}")
 
-    target_model.save(f"target_model_2_{it_num}")
+    target_model.save(f"target_model_4_{it_num}")
 
-    with open(f"replay_mem_2_{it_num}.pkl", 'wb') as f:
+    with open(f"replay_mem_4_{it_num}.pkl", 'wb') as f:
         pickle.dump(replay_mem, f)
     
-    with open(f"X_2_{it_num}.pkl", 'wb') as f:
+    with open(f"X_4_{it_num}.pkl", 'wb') as f:
         pickle.dump(X, f)
     
-    with open(f"Y_2_{it_num}.pkl", 'wb') as f:
+    with open(f"Y_4_{it_num}.pkl", 'wb') as f:
         pickle.dump(Y, f)
     
-    with open(f"max_profits_2_{it_num}.pkl", 'wb') as f:
+    with open(f"max_profits_4_{it_num}.pkl", 'wb') as f:
         pickle.dump(max_profits, f)
     
     if it_num != 0:
-        shutil.rmtree(f"model_2_{it_num-1}")
-        shutil.rmtree(f"target_model_2_{it_num-1}")
-        os.remove(f"replay_mem_2_{it_num-1}.pkl")
-        os.remove(f"X_2_{it_num-1}.pkl")
-        os.remove(f"Y_2_{it_num-1}.pkl")
-        os.remove(f"max_profits_2_{it_num-1}.pkl")
+        shutil.rmtree(f"model_4_{it_num-1}")
+        shutil.rmtree(f"target_model_4_{it_num-1}")
+        os.remove(f"replay_mem_4_{it_num-1}.pkl")
+        os.remove(f"X_4_{it_num-1}.pkl")
+        os.remove(f"Y_4_{it_num-1}.pkl")
+        os.remove(f"max_profits_4_{it_num-1}.pkl")
     
 def simulate(env: Enviroment):
 
@@ -714,8 +729,8 @@ def simulate(env: Enviroment):
     y = []
     max_profits = []
 
-    model = agent((403,), 3)
-    target_model = agent((403,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    model = agent((44,), 3)
+    target_model = agent((44,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
     target_model.set_weights(model.get_weights())
     
     replay_memory = deque(maxlen=100_000)
