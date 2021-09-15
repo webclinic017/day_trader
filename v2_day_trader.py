@@ -24,7 +24,8 @@ import numpy.polynomial.polynomial as poly
 from dateutil import parser
 from datetime import datetime
 
-
+# maybe try increasing the amount bought each time, ie, from 100 - 300, would be greater profit, but also greater loss?
+# Include its current money not how many stock it holds
 
 PAUSE_SIG = False
 
@@ -37,6 +38,7 @@ class Enviroment:
     curr_money: int
     closing_prices: list
     max_profit: int
+    goal_profit: int
 
     def __init__(self, chunks, closing_prices):
         
@@ -47,6 +49,7 @@ class Enviroment:
         self.curr_money = 1000
         self.prev_money = 1000
         self.max_profit = 1000
+        self.goal_profit = 1005
         self.closing_prices = closing_prices
     
     def reset(self):
@@ -55,6 +58,7 @@ class Enviroment:
         self.curr_money = 1000
         self.prev_money = 1000
         self.max_profit = 1000
+        self.goal_profit = 1005
         self.num_chunks = 0
 
     def get_current_money(self):
@@ -87,11 +91,11 @@ class Enviroment:
 
     def get_current_state(self):
         
+        
         curr_state = np.copy(self.chunks[self.curr_chunk])
-        toal_holdings = len(self.buy_prices)
-        curr_state = np.append(curr_state, toal_holdings)
         curr_state = np.append(curr_state, self.curr_money)
         curr_state = np.append(curr_state, self.num_chunks)
+        curr_state = np.append(curr_state, self.goal_profit)
 
         return curr_state
 
@@ -163,7 +167,7 @@ class Enviroment:
             
             if self.num_chunks > 1654 and self.num_chunks % 1655 == 0:        # Checking if we made 1 % for the week
 
-                if self.get_current_money() < int(self.prev_money*1.01):
+                if self.get_current_money() < self.goal_profit:
 
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
@@ -171,7 +175,12 @@ class Enviroment:
                     return -100, True
 
                 else:
-                    self.prev_money = self.get_current_money()
+                    
+                    self.goal_profit *= 1.005
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+
                     return 100,  False
 
             if self.get_current_money() > self.max_profit:
@@ -401,8 +410,7 @@ def create_training_chunks():
         with open("BND_prices.pkl", 'wb') as f:
             pickle.dump(BND_prices, f)
 
-    SPY_closing_prices = SPY_prices
-    SPY_chunks = make_stationary(SPY_prices)
+    SPY_chunks, SPY_closing_prices = make_stationary(SPY_prices, True)
     VTI_chunks = make_stationary(VTI_prices)
     VXUS_chunks = make_stationary(VXUS_prices)
     BND_chunks = make_stationary(BND_prices)
@@ -454,9 +462,10 @@ def get_closing_prices(chunks_by_days: dict):
     
     return closing_prices
 
-def make_stationary(prices: dict):
+def make_stationary(prices: dict, get_close: bool = False):
 
     
+    closing_prices = []
     price_df = pd.DataFrame()
     price_df['prices'] = prices
     price_df['prices'] = price_df['prices'].apply(np.log)
@@ -468,10 +477,15 @@ def make_stationary(prices: dict):
 
     chunks = []
     for i in range(len(prices)):
-        if i+10 < len(prices):
-            chunks.append(prices[i:i+10])
+        
+        if i+100 < len(prices):
+            chunks.append(prices[i:i+100])
+            closing_prices.append(prices[i:i+100][-1])
     
-    return chunks
+    if get_close:
+        return chunks, closing_prices
+    else:
+        return chunks
 
 def combine_chunks(all_chunks: list, SPY_chunks: list):
 
@@ -663,29 +677,29 @@ def train(env, replay_memory, model, target_model, done):
 
 def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
     
-    model.save(f"model_1_{it_num}")
+    model.save(f"model_2_{it_num}")
 
-    target_model.save(f"target_model_1_{it_num}")
+    target_model.save(f"target_model_2_{it_num}")
 
-    with open(f"replay_mem_1_{it_num}.pkl", 'wb') as f:
+    with open(f"replay_mem_2_{it_num}.pkl", 'wb') as f:
         pickle.dump(replay_mem, f)
     
-    with open(f"X_1_{it_num}.pkl", 'wb') as f:
+    with open(f"X_2_{it_num}.pkl", 'wb') as f:
         pickle.dump(X, f)
     
-    with open(f"Y_1_{it_num}.pkl", 'wb') as f:
+    with open(f"Y_2_{it_num}.pkl", 'wb') as f:
         pickle.dump(Y, f)
     
-    with open(f"max_profits_1_{it_num}.pkl", 'wb') as f:
+    with open(f"max_profits_2_{it_num}.pkl", 'wb') as f:
         pickle.dump(max_profits, f)
     
     if it_num != 0:
-        shutil.rmtree(f"model_1_{it_num-1}")
-        shutil.rmtree(f"target_model_1_{it_num-1}")
-        os.remove(f"replay_mem_1_{it_num-1}.pkl")
-        os.remove(f"X_1_{it_num-1}.pkl")
-        os.remove(f"Y_1_{it_num-1}.pkl")
-        os.remove(f"max_profits_1_{it_num-1}.pkl")
+        shutil.rmtree(f"model_2_{it_num-1}")
+        shutil.rmtree(f"target_model_2_{it_num-1}")
+        os.remove(f"replay_mem_2_{it_num-1}.pkl")
+        os.remove(f"X_2_{it_num-1}.pkl")
+        os.remove(f"Y_2_{it_num-1}.pkl")
+        os.remove(f"max_profits_2_{it_num-1}.pkl")
     
 def simulate(env: Enviroment):
 
@@ -700,8 +714,8 @@ def simulate(env: Enviroment):
     y = []
     max_profits = []
 
-    model = agent((42,), 3)
-    target_model = agent((42,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    model = agent((403,), 3)
+    target_model = agent((403,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
     target_model.set_weights(model.get_weights())
     
     replay_memory = deque(maxlen=100_000)
@@ -823,18 +837,24 @@ def test(env):
     
 def trend_analysis():
 
-    with open("results/X_1_999.pkl", 'rb') as f:
+    with open("X_3_216.pkl", 'rb') as f:
         X = np.array(pickle.load(f))
     
-    with open("results/Y_1_999.pkl", 'rb') as f:
+    with open("Y_3_216.pkl", 'rb') as f:
         Y = np.array(pickle.load(f))
 
-    plt.plot(X,Y,'o')
-    coefs = poly.polyfit(X, Y, 1)
-    ffit = poly.polyval(X, coefs)
-    plt.plot(X, ffit)
-    print(coefs)
+    X = X[-50:]
+    Y = Y[-50:]
+
+    plt.plot(X, Y, 'o')
+    m, b = np.polyfit(X, Y, 1)
+    plt.plot(X, m*X+b)
+    print(f"Slop: {m}")
     plt.show()
+
+
+
+
 
 
 
