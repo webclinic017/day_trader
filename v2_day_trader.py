@@ -36,6 +36,7 @@ class Enviroment:
     buy_prices: list
     curr_money: int
     closing_prices: list
+    max_profit: int
 
     def __init__(self, chunks, closing_prices):
         
@@ -45,6 +46,7 @@ class Enviroment:
         self.buy_prices = []
         self.curr_money = 1000
         self.prev_money = 1000
+        self.max_profit = 1000
         self.closing_prices = closing_prices
     
     def reset(self):
@@ -52,6 +54,7 @@ class Enviroment:
         self.buy_prices = []
         self.curr_money = 1000
         self.prev_money = 1000
+        self.max_profit = 1000
         self.num_chunks = 0
 
     def get_current_money(self):
@@ -88,8 +91,7 @@ class Enviroment:
         toal_holdings = len(self.buy_prices)
         curr_state = np.append(curr_state, toal_holdings)
         curr_state = np.append(curr_state, self.curr_money)
-        # Add in what block num were on, ie how far into the week
-        # Keep track of max profit for the week
+        curr_state = np.append(curr_state, self.num_chunks)
 
         return curr_state
 
@@ -146,29 +148,35 @@ class Enviroment:
                     self.curr_money -= 100
 
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
-                print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
+                #print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
                 
 
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
                 reward = 0      # Do nothing - no reward
-                print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
+                #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
                 reward = self.get_reward(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
                 self.buy_prices = []
-                print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
+                #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
             
             if self.num_chunks > 1654 and self.num_chunks % 1655 == 0:        # Checking if we made 1 % for the week
 
                 if self.get_current_money() < int(self.prev_money*1.01):
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+                    
                     return -100, True
 
                 else:
                     self.prev_money = self.get_current_money()
                     return 100,  False
 
-            
+            if self.get_current_money() > self.max_profit:
+                self.max_profit = self.get_current_money()
+
             return reward,  False
         
        
@@ -653,27 +661,31 @@ def train(env, replay_memory, model, target_model, done):
         Y.append(current_qs)            #
     model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
-def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list):
+def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
     
-    model.save(f"model_{it_num}")
+    model.save(f"model_1_{it_num}")
 
-    target_model.save(f"target_model_{it_num}")
+    target_model.save(f"target_model_1_{it_num}")
 
-    with open(f"replay_mem_{it_num}.pkl", 'wb') as f:
+    with open(f"replay_mem_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(replay_mem, f)
     
-    with open(f"X_{it_num}.pkl", 'wb') as f:
+    with open(f"X_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(X, f)
     
-    with open(f"Y_{it_num}.pkl", 'wb') as f:
+    with open(f"Y_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(Y, f)
     
+    with open(f"max_profits_1_{it_num}.pkl", 'wb') as f:
+        pickle.dump(max_profits, f)
+    
     if it_num != 0:
-        shutil.rmtree(f"model_{it_num-1}")
-        shutil.rmtree(f"target_model_{it_num-1}")
-        os.remove(f"replay_mem_{it_num-1}.pkl")
-        os.remove(f"X_{it_num-1}.pkl")
-        os.remove(f"Y_{it_num-1}.pkl")
+        shutil.rmtree(f"model_1_{it_num-1}")
+        shutil.rmtree(f"target_model_1_{it_num-1}")
+        os.remove(f"replay_mem_1_{it_num-1}.pkl")
+        os.remove(f"X_1_{it_num-1}.pkl")
+        os.remove(f"Y_1_{it_num-1}.pkl")
+        os.remove(f"max_profits_1_{it_num-1}.pkl")
     
 def simulate(env: Enviroment):
 
@@ -686,6 +698,7 @@ def simulate(env: Enviroment):
 
     X = []
     y = []
+    max_profits = []
 
     model = agent((42,), 3)
     target_model = agent((42,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
@@ -730,12 +743,13 @@ def simulate(env: Enviroment):
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
         target_model.set_weights(model.get_weights())
 
-        print(f"Made it to ${env.get_current_money()} -  it number: {i} - epsilon: {epsilon}")
+        print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
         X.append(len(X) + 1)
+        max_profits.append(env.max_profit)
         y.append(env.get_current_money())
         total_segment_reward = 0
 
-        save_state(model, target_model, (episode-1), replay_memory, X, y)
+        save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
         
 
     X, Y = np.array(X).reshape(-1,1), np.array(y).reshape(-1,1)
