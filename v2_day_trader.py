@@ -78,9 +78,7 @@ class Enviroment:
             hypothetical += (100 * (self.closing_prices[self.curr_chunk] / buy_price))
         
         return round((cash+hypothetical), 2)
-
-
-   
+  
     def get_reward(self, current, decay):
         
         reward = 0
@@ -165,13 +163,12 @@ class Enviroment:
 
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
 
-                if self.buy_prices: # only if I'm currently holding stock
+                if self.buy_prices:
                     past_avg = self.get_past_10min_avg()
                     current_price = self.closing_prices[self.curr_chunk -1]
                     reward = current_price - past_avg  
                 else:
-                    reward = 0    
-                
+                    reward = 0
                 #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
@@ -208,8 +205,6 @@ class Enviroment:
             self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))          # Wrapping around to new random location
             return self.step(action, prev_chunk, decay)
             
-
-
     def get_random_action(self):
         return random.randint(1,3)
 
@@ -692,36 +687,36 @@ def train(env, replay_memory, model, target_model, done):
 
 def save_state(model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
     
-    model.save(f"model_4_{it_num}")
+    model.save(f"model_1_{it_num}")
 
-    target_model.save(f"target_model_4_{it_num}")
+    target_model.save(f"target_model_1_{it_num}")
 
-    with open(f"replay_mem_4_{it_num}.pkl", 'wb') as f:
+    with open(f"replay_mem_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(replay_mem, f)
     
-    with open(f"X_4_{it_num}.pkl", 'wb') as f:
+    with open(f"X_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(X, f)
     
-    with open(f"Y_4_{it_num}.pkl", 'wb') as f:
+    with open(f"Y_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(Y, f)
     
-    with open(f"max_profits_4_{it_num}.pkl", 'wb') as f:
+    with open(f"max_profits_1_{it_num}.pkl", 'wb') as f:
         pickle.dump(max_profits, f)
     
     if it_num != 0:
-        shutil.rmtree(f"model_4_{it_num-1}")
-        shutil.rmtree(f"target_model_4_{it_num-1}")
-        os.remove(f"replay_mem_4_{it_num-1}.pkl")
-        os.remove(f"X_4_{it_num-1}.pkl")
-        os.remove(f"Y_4_{it_num-1}.pkl")
-        os.remove(f"max_profits_4_{it_num-1}.pkl")
+        shutil.rmtree(f"model_1_{it_num-1}")
+        shutil.rmtree(f"target_model_1_{it_num-1}")
+        os.remove(f"replay_mem_1_{it_num-1}.pkl")
+        os.remove(f"X_1_{it_num-1}.pkl")
+        os.remove(f"Y_1_{it_num-1}.pkl")
+        os.remove(f"max_profits_1_{it_num-1}.pkl")
     
 def simulate(env: Enviroment):
 
     epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-    decay = 0.01       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
+    decay = 0.001       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
     episode = 0
     total_segment_reward = 0
 
@@ -737,7 +732,7 @@ def simulate(env: Enviroment):
 
 
 
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(10000)):
 
         done = False
         steps_to_update_target_model = 0
@@ -852,17 +847,15 @@ def test(env):
     
 def trend_analysis():
 
-    with open("X_3_216.pkl", 'rb') as f:
+    with open("X_5_389.pkl", 'rb') as f:
         X = np.array(pickle.load(f))
     
-    with open("Y_3_216.pkl", 'rb') as f:
+    with open("max_profits_5_389.pkl", 'rb') as f:
         Y = np.array(pickle.load(f))
 
-    X = X[-50:]
-    Y = Y[-50:]
-
-    plt.plot(X, Y, 'o')
+    plt.plot(X, Y)
     m, b = np.polyfit(X, Y, 1)
+    
     plt.plot(X, m*X+b)
     print(f"Slop: {m}")
     plt.show()
@@ -877,15 +870,15 @@ def trend_analysis():
 
 def main():
 
-    chunks, closing_prices = create_training_chunks()
-    env = Enviroment(chunks, closing_prices)
-    simulate(env)
+    #chunks, closing_prices = create_training_chunks()
+    #env = Enviroment(chunks, closing_prices)
+    #simulate(env)
 
    #chunks = create_testing_chunks()
    #env = Enviroment(chunks)
    #test(env)
 
-   #trend_analysis()
+   trend_analysis()
 
 
 
