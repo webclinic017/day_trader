@@ -52,6 +52,9 @@ class Enviroment:
         self.goal_profit = 1005
         self.closing_prices = closing_prices
     
+    def load_year_test(self):
+        self.curr_chunk = len(self.chunks) - int(len(self.chunks)/3)        # setting initial to 2/3 the way through 3 years
+
     def reset(self):
         self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))
         self.buy_prices = []
@@ -107,40 +110,65 @@ class Enviroment:
 
     def test_step(self, action, prev_chunk, decay):
        
+        self.num_chunks += 1
+
         if self.curr_chunk + 1 < int(len(self.chunks)):
  
-            last_close = 19
             self.curr_chunk += 1
             reward = 0
 
             if action == 1:     # Buying a share of the stock
 
                 if self.curr_money > 100:
-                    self.buy_prices.append(prev_chunk[last_close])       # Appending current price we bought the stock at for previous chunk 
+                    self.buy_prices.append(self.closing_prices[self.curr_chunk -1])       # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 100
 
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
-                print(f"     Decided to buy stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
+                #print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
                 
 
-            elif action == 2:   # Holding the stock
-                reward = 0      # Do nothing - no reward
-                print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
+            elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
+
+                if self.buy_prices:
+                    past_avg = self.get_past_10min_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = current_price - past_avg  
+                else:
+                    reward = 0
+                #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
-                reward = self.get_reward(prev_chunk[last_close], decay)        # Selling based on price that the model has seen and is acting on
+                reward = self.get_reward(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
                 self.buy_prices = []
-                print(f"     Decided to sell stock at price: {prev_chunk[last_close]} || {self.get_current_money()} || {self.curr_chunk} \n")
+                #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
-            if self.curr_chunk > 2999 and self.curr_chunk % 3000 == 0:        # Checking if we made 4% the past month
+            
+            if self.num_chunks > 1654 and self.num_chunks % 1655 == 0:        # Checking if we made 1 % for the week
 
-                if self.get_current_money() > int(self.prev_money*1.02):
-                    return 10 * reward, False
+                if self.get_current_money() < self.goal_profit:
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+                    
+                    return -100, False  # Not ending it if we don't make quota, just penalizing
+
+                else:
+                    
+                    self.goal_profit *= 1.005
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+
+                    return 100,  False
+
+            if self.get_current_money() > self.max_profit:
+                self.max_profit = self.get_current_money()
 
             return reward,  False
         
+       
         else:
-            return 0, True
+            return 0, True # hit the end, ending the simulation
 
     def step(self, action, prev_chunk, decay):
         
@@ -793,27 +821,33 @@ def simulate(env: Enviroment):
     with open("old_y.pkl", 'wb') as f:
         pickle.dump(y, f)
 
-def test(env):
+def test(env: Enviroment):
 
-    epsilon = 0.05 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
+    epsilon = 0.01 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
     decay = 0.01       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
     episode = 0
 
+    total_length = int(len(env.chunks)/3)
     done = False
 
-    model = keras.models.load_model(f"cache/model_{431}")
-    target_model = keras.models.load_model(f"cache/target_model_{431}") # Making neural net with input layer equal to state space size, and output layer equal to action space size
-    with open(f"cache/replay_mem_{431}.pkl", 'rb') as f:
+    current_money = []
+    iteration = []
+    action_list = []
+
+    model = keras.models.load_model(f"cache/model_1_{850}")
+    target_model = keras.models.load_model(f"cache/target_model_1_{850}") # Making neural net with input layer equal to state space size, and output layer equal to action space size
+    with open(f"cache/replay_mem_1_{850}.pkl", 'rb') as f:
         replay_memory = pickle.load(f)
     
     i = 0
+    env.load_year_test()
+
     while(not done):
         
         done = False
         steps_to_update_target_model = 0
-        env.reset()
         
         steps_to_update_target_model += 1 
         random_number = np.random.rand()
@@ -828,6 +862,7 @@ def test(env):
             predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
             action = np.argmax(predicted) 
         
+        action_list.append(action)
         reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
         new_state = env.get_current_state()                 # Getting the next step
         replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
@@ -842,16 +877,29 @@ def test(env):
             target_model.set_weights(model.get_weights())
         
 
-        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / 5817 - epsilon: {epsilon}")
+        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / {total_length} - epsilon: {epsilon}")
+        current_money.append(env.get_current_money())
+        iteration.append(i)
         i += 1
+    
+    with open(f"current_money.pkl", 'wb') as f:
+        pickle.dump(current_money, f)
+    with open(f"iteration.pkl", 'wb') as f:
+        pickle.dump(iteration, f)
+    with open(f"action_list.pkl", 'wb') as f:
+        pickle.dump(action_list, f)
+
     
 def trend_analysis():
 
-    with open("X_5_389.pkl", 'rb') as f:
+    with open("iteration.pkl", 'rb') as f:
         X = np.array(pickle.load(f))
     
-    with open("max_profits_5_389.pkl", 'rb') as f:
+    with open("SPY_prices.pkl", 'rb') as f:
         Y = np.array(pickle.load(f))
+
+
+    Y = Y[int(len(Y)/3):]
 
     plt.plot(X, Y)
     m, b = np.polyfit(X, Y, 1)
@@ -859,6 +907,10 @@ def trend_analysis():
     plt.plot(X, m*X+b)
     print(f"Slop: {m}")
     plt.show()
+    
+
+
+    
 
 
 
@@ -874,11 +926,32 @@ def main():
     #env = Enviroment(chunks, closing_prices)
     #simulate(env)
 
-   #chunks = create_testing_chunks()
-   #env = Enviroment(chunks)
-   #test(env)
+    chunks, closing_prices = create_training_chunks()
+    #env = Enviroment(chunks, closing_prices)
+    #test(env)
+    Y = []
+    starting = len(closing_prices) - int(len(closing_prices)/3)
 
-   trend_analysis()
+    for i in range(starting, len(closing_prices)):
+        Y.append(closing_prices[i])
+
+    with open("iteration.pkl", 'rb') as f:
+        X = np.array(pickle.load(f))
+    
+    with open("current_money.pkl", 'rb') as f:
+        Y_2 = np.array(pickle.load(f))
+
+    
+    plt.plot(X, Y)
+    plt.plot(X, Y_2)
+    m, b = np.polyfit(X, Y, 1)
+    
+    plt.plot(X, m*X+b)
+    print(f"Slop: {m}")
+    plt.show()
+
+
+   #trend_analysis()
 
 
 
