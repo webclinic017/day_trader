@@ -51,8 +51,13 @@ class ModelTrainer():
         new_times = []
 
         if times:
+            
             current_closing_prices = df[(ticker, 'close')]
             filled_closing_prices = []
+
+            current_volume = df[(ticker, 'volume')]
+            filled_volume = []
+
 
             starting_time = str(times[0]).split(" ")[1]
 
@@ -67,11 +72,14 @@ class ModelTrainer():
                     for k in range(diff):
                         new_times.append(times[0] + timedelta(minutes=k+1))
                         filled_closing_prices.append(current_closing_prices[0])
+                        filled_volume.append(current_volume[0])
 
 
             for i in range(len(times)):
 
                 filled_closing_prices.append(current_closing_prices[i])
+                filled_volume.append(current_volume[i])
+
                 new_times.append(times[i])
 
                 if i+1 < len(times):
@@ -80,7 +88,9 @@ class ModelTrainer():
 
                     if diff != 1:
                         for j in range(diff - 1):
+                            
                             filled_closing_prices.append(current_closing_prices[i])
+                            filled_volume.append(current_volume[i])
                             new_times.append(times[i] + timedelta(minutes=j+1))
                 
                 else:
@@ -92,18 +102,24 @@ class ModelTrainer():
 
                     if diff != 0:
                         for k in range(diff):
+                            
                             new_times.append(times[i] + timedelta(minutes=k+1))
                             filled_closing_prices.append(current_closing_prices[i])
+                            filled_volume.append(current_volume[i])
 
 
             not_0 = len(filled_closing_prices) - filled_closing_prices.count(0)
-            avg = round(sum(filled_closing_prices) / not_0,2)
+            avg = round(sum(filled_closing_prices) / not_0,22)
+
+            vol_not_0 = len(filled_volume) - filled_volume.count(0)
+            vol_avg = round(sum(filled_volume) / vol_not_0, 2)
 
             for k in range(len(filled_closing_prices)):
                 if filled_closing_prices[k] == 0:
                     filled_closing_prices[k] = avg
+                    filled_volume[k] = vol_avg
 
-            return filled_closing_prices
+            return filled_closing_prices, filled_volume
         
         else: 
             return []
@@ -169,6 +185,7 @@ class ModelTrainer():
     def create_training_chunks(self):
         
         if os.path.isfile("cache/SPY_prices.pkl"):
+            
             with open("cache/SPY_prices.pkl", "rb") as f:
                 SPY_prices =  pickle.load(f)
             with open("cache/VTI_prices.pkl", "rb") as f:
@@ -177,6 +194,16 @@ class ModelTrainer():
                 VXUS_prices =  pickle.load(f)
             with open("cache/BND_prices.pkl", "rb") as f:
                 BND_prices =  pickle.load(f)
+            
+            with open("cache/SPY_vol.pkl", "rb") as f:
+                SPY_vol =  pickle.load(f)
+            with open("cache/VTI_vol.pkl", "rb") as f:
+                VTI_vol =  pickle.load(f)
+            with open("cache/VXUS_vol.pkl", "rb") as f:
+                VXUS_vol =  pickle.load(f)
+            with open("cache/BND_vol.pkl", "rb") as f:
+                BND_vol =  pickle.load(f)
+
 
         else:
 
@@ -192,21 +219,26 @@ class ModelTrainer():
             VTI_prices = []
             VXUS_prices = []
             BND_prices = []
+
+            SPY_vol = []
+            VTI_vol = []
+            VXUS_vol = []
+            BND_vol = []
             
             skipped_dates = []
             for i in tqdm(range(int(len(dates)))):
                 
                 SPY_barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                SPY_barset = self.fill_df(SPY_barset, 'SPY')  
+                SPY_barset, SPY_bar_vol = self.fill_df(SPY_barset, 'SPY')  
 
                 VTI_barset = api.get_barset(symbols=['VTI'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 39
-                VTI_barset = self.fill_df(VTI_barset, 'VTI')
+                VTI_barset, VTI_bar_vol = self.fill_df(VTI_barset, 'VTI')
 
                 VXUS_barset = api.get_barset(symbols=['VXUS'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                VXUS_barset = self.fill_df(VXUS_barset, 'VXUS')
+                VXUS_barset, VXUS_bar_vol = self.fill_df(VXUS_barset, 'VXUS')
 
                 BND_barset = api.get_barset(symbols=['BND'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                BND_barset = self.fill_df(BND_barset, 'BND')
+                BND_barset, BND_bar_vol = self.fill_df(BND_barset, 'BND')
 
                 base_len = len(SPY_barset)
                 if base_len == 0 or len(VTI_barset) != base_len or len(VXUS_barset) != base_len or len(BND_barset) != base_len:
@@ -218,6 +250,11 @@ class ModelTrainer():
                     VTI_prices += VTI_barset
                     VXUS_prices += VXUS_barset
                     BND_prices += BND_barset
+
+                    SPY_vol += SPY_bar_vol
+                    VTI_vol += VTI_bar_vol
+                    VXUS_vol += VXUS_bar_vol
+                    BND_vol += BND_bar_vol
                 
             with open("cache/SPY_prices.pkl", 'wb') as f:
                 pickle.dump(SPY_prices, f)
@@ -228,13 +265,29 @@ class ModelTrainer():
             with open("cache/BND_prices.pkl", 'wb') as f:
                 pickle.dump(BND_prices, f)
 
+            with open("cache/SPY_vol.pkl", 'wb') as f:
+                pickle.dump(SPY_vol, f)
+            with open("cache/VTI_vol.pkl", 'wb') as f:
+                pickle.dump(VTI_vol, f)
+            with open("cache/VXUS_vol.pkl", 'wb') as f:
+                pickle.dump(VXUS_vol, f)
+            with open("cache/BND_vol.pkl", 'wb') as f:
+                pickle.dump(BND_vol, f)
+
         SPY_chunks, SPY_closing_prices = self.make_stationary(SPY_prices, True)
         VTI_chunks = self.make_stationary(VTI_prices)
         VXUS_chunks = self.make_stationary(VXUS_prices)
         BND_chunks = self.make_stationary(BND_prices)
 
-        chunks = [VTI_chunks, VXUS_chunks, BND_chunks]
-        total_chunks = self.combine_chunks(chunks, SPY_chunks)
+        SPY_vol_chunks = self.make_stationary(SPY_vol)
+        VTI_vol_chunks = self.make_stationary(VTI_vol)
+        VXUS_vol_chunks = self.make_stationary(VXUS_vol)
+        BND_vol_chunks = self.make_stationary(BND_vol)
+
+        price_chunks = [VTI_chunks, VXUS_chunks, BND_chunks]
+        vol_chunks = [VTI_vol_chunks, VXUS_vol_chunks, BND_vol_chunks]
+
+        total_chunks = self.combine_chunks(price_chunks, vol_chunks, SPY_chunks, SPY_vol_chunks)
 
         return total_chunks, SPY_closing_prices
         
@@ -285,15 +338,16 @@ class ModelTrainer():
         else:
             return chunks
 
-    def combine_chunks(self, all_chunks: list, SPY_chunks: list):
+    def combine_chunks(self, price_chunks: list, vol_chunks: list, price_SPY_chunks: list, vol_SPY_chunks: list):
 
         total_chunks = []
-        for i in range(len(SPY_chunks)):
+
+        for i in range(len(price_SPY_chunks)):
             
-            total_chunks.append(SPY_chunks[i])
+            total_chunks.append([val for pair in zip(price_SPY_chunks[i], vol_SPY_chunks[i]) for val in pair])
             
-            for chunk in all_chunks:
-                total_chunks[i] += chunk[i]
+            for k in price_chunks:
+                total_chunks[i] += [val for pair in zip(price_chunks[k][i], vol_chunks[k][i]) for val in pair]
         
         return total_chunks
 
@@ -512,8 +566,8 @@ class ModelTrainer():
         y = []
         max_profits = []
 
-        model = self.agent((44,), 3)
-        target_model = self.agent((44,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+        model = self.agent((84,), 3)
+        target_model = self.agent((84,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
         target_model.set_weights(model.get_weights())
         
         replay_memory = deque(maxlen=100_000)
@@ -548,7 +602,7 @@ class ModelTrainer():
                 new_state[-2] = env.num_chunks
                 new_state[-3] = env.curr_money
                 new_state[-4] = len(env.buy_prices)
-                
+
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
                 # 3. Update the Main Network using the Bellman Equation
