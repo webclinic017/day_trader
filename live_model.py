@@ -1,21 +1,13 @@
-import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 from collections import deque
 import random
 import alpaca_trade_api as tradeapi
-from datetime import date, timedelta
 import matplotlib.pyplot as plt
 import pickle
 import os.path
 import os
-from tqdm import tqdm
-import pandas as pd
-from sklearn.linear_model import LinearRegression
-from matplotlib import pyplot as plt
-import shutil
 import matplotlib.pyplot as plt
-from dateutil import parser
 import websocket, json
 import time
 from threading import Thread
@@ -24,15 +16,12 @@ from threading import Thread
 class LiveModel():
 
     api: tradeapi.REST
-    auth_data: dict
-    socket_url: str
-    ws: websocket
-    
+
     prev_10_SPY: deque
     prev_10_VTI: deque
     prev_10_BND: deque
     prev_10_VXUS: deque
-    
+
     buy_prices: list
     curr_money: int
     goal_money: int
@@ -68,33 +57,22 @@ class LiveModel():
     def __init__(self):
         
         self.api = tradeapi.REST()
-        self.auth_data = {
-            "action": "authenticate",
-            "data": {"key_id": os.environ.get("APCA_API_KEY_ID", None), "secret_key": os.environ.get("APCA_API_SECRET_KEY", None)}
-        }
-        self.socket_url = "wss://data.alpaca.markets/stream"
-        self.ws = websocket.WebSocketApp(self.socket_url , on_open=self.run, on_message=self.update_prices, on_close=self.close)
-        
+
         self.prev_10_BND = deque(maxlen=10)
         self.prev_10_SPY = deque(maxlen=10)
         self.prev_10_VTI = deque(maxlen=10)
         self.prev_10_VXUS = deque(maxlen=10)
 
-        self.buy_prices = []
-        self.curr_money = 0
-        self.goal_money = 0
-        self.mins_into_week = 0
-
         self.model = keras.models.load_model(f"cache/model_1_{850}")
         self.target_model = keras.models.load_model(f"cache/target_model_1_{850}")
+        
         with open(f"cache/replay_mem_1_{850}.pkl", 'rb') as f:
             self.replay_memory = pickle.load(f)
-
-        self.ws.run_forever()
-
-    def close(self):
-
-        print(f"Closed connection")
+        
+        self.buy_prices = []
+        self.curr_money = self.api.get_account().equity
+        self.goal_money = self.curr_money * 1.05
+        self.mins_into_week = 0
 
     def  start_action_loop(self):
 
@@ -113,39 +91,7 @@ class LiveModel():
                 print(f"    BND: {len(self.prev_10_BND)}")
             
             time.sleep(60)
-
-    def update_prices(self, ws: websocket, message: dict):
-        
-        message = eval(message)             # Security risk - Fix later
-        print(message)
-
-        if message["stream"] == "AM.VTI":
-            curr_VTI_price = round(np.log(message["data"]["c"]), 3)
-            self.prev_10_VTI.append(curr_VTI_price)
-            print(curr_VTI_price)
-            
-        
-        elif message["stream"] == "AM.VXUS":
-            curr_VXUS_price = round(np.log(message["data"]["c"]), 3)
-            self.prev_10_VXUS.append(curr_VXUS_price)
-            print(curr_VXUS_price)
-            
-        
-        elif message["stream"] == "AM.BND":
-            curr_BND_price = round(np.log(message["data"]["c"]), 3)
-            self.prev_10_BND.append(curr_BND_price)
-            print(curr_BND_price)
-            
-        
-        elif message["stream"] == "AM.SPY":
-            curr_SPY_price = round(np.log(message["data"]["c"]), 3)
-            self.prev_10_SPY.append(curr_SPY_price)
-            print(curr_SPY_price)
-
-            if (len(self.prev_10_SPY) == 10 and len(self.prev_10_VXUS) > 0
-                and len(self.prev_10_BND) > 0 and len(self.prev_10_VTI) > 0):
-                self.fill_remaining()
-    
+  
     def fill_remaining(self):
 
         
@@ -172,7 +118,6 @@ class LiveModel():
             self.api.submit_order(symbol="SPY", notional=100.00)
             self.buy_prices.append(self.prev_10_SPY[9])     # Need to make dict and add in id?
         
-
     def train(self, replay_memory, model, target_model, done):
         learning_rate = 0.7         # Learning rate
         discount_factor = 0.618     # Not sure? 
@@ -281,15 +226,7 @@ class LiveModel():
         self.current_money.append(self.curr_money)
         self.iteration.append(self.mins_into_week)
 
-    def run(self, ws: websocket):
-
-        ws.send(json.dumps(self.auth_data))
-        listen_message = {"action": "listen", "data": {"streams": ["AM.SPY", "AM.VXUS", "AM.VTI", "AM.BND"]}}
-        ws.send(json.dumps(listen_message))
-
-        thread = Thread(target = self.start_action_loop, args = ())
-        thread.start()
-
+   
         
 
 
