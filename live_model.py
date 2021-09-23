@@ -42,7 +42,6 @@ class LiveModel():
 
     STOP_SIG: bool = False
 
-
     # Model should only care about one trade at a time
     # We can just have 10 separate models going to help negate risk
     # If we 1000, each model is in charge of 100
@@ -157,7 +156,6 @@ class LiveModel():
 
         return equity
 
-    # WE SHOULD INCLUDE EQUITY AS MODEL INPUT
     def execute_action(self, action: int):
   
         reward = 0
@@ -226,16 +224,9 @@ class LiveModel():
         self.current_money.append(self.curr_money)
         self.iteration.append(self.mins_into_week)
 
-   
-        
-
-
-
-
 def main():
     model_live = LiveModel()
     return
-
 
 if __name__ == '__main__':
     main()

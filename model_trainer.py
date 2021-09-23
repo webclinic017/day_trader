@@ -442,6 +442,7 @@ class ModelTrainer():
         return model
 
     def train(self, env, replay_memory, model, target_model, done):
+        
         learning_rate = 0.7         # Learning rate
         discount_factor = 0.618     # Not sure? 
 
@@ -542,7 +543,12 @@ class ModelTrainer():
                     action = np.argmax(predicted) 
                 
                 reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-                new_state = env.get_current_state()                 # Getting the next step
+                
+                new_state = current_state               
+                new_state[-2] = env.num_chunks
+                new_state[-3] = env.curr_money
+                new_state[-4] = len(env.buy_prices)
+                
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
                 # 3. Update the Main Network using the Bellman Equation
