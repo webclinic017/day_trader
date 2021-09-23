@@ -120,7 +120,15 @@ class LiveModel():
 
     def get_random_action(self):
         return random.randint(1,3)
+    
+    def get_10min_avg(self):
         
+        total = sum(self.prev_10_SPY[0:9])
+        return total/9
+
+    def execute_buy(self):
+        #Implement
+        return
 
     def train(self, replay_memory, model, target_model, done):
         learning_rate = 0.7         # Learning rate
@@ -154,10 +162,38 @@ class LiveModel():
         model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
 
-    def execute_action(self, action: int):
-        # implement
-        # Update curr_money and buy_prices
+    def execute_sell(self):
+
+        #Sell
+        # Update current money
+        # Return current money
         return
+
+
+    def execute_action(self, action: int):
+  
+        reward = 0
+
+        if action == 1:
+
+            if self.curr_money > 100:
+                self.buy_prices.append(self.prev_10_SPY[9])
+                self.execute_buy()
+                self.curr_money -= 100
+
+
+        elif action == 2:
+            
+            if self.buy_prices:
+                past_avg = self.get_10min_avg()
+                reward = self.prev_10_SPY[9] - past_avg
+
+        elif action == 3:
+            old_money = self.curr_money
+            new_money = self.execute_sell()
+            reward = new_money - old_money
+
+        return reward
 
     def make_decision(self):
 

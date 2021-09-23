@@ -80,6 +80,8 @@ class TrainingEnviroment:
 
         return curr_state
 
+
+    # maybe for each buy, segment off a new model to dictate when to sell the current position, then once we've sold the position we would have to average the model decision back into the base model?
     def test_step(self, action, prev_chunk, decay):
        
         self.num_chunks += 1
