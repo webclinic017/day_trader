@@ -50,6 +50,14 @@ class LiveModel():
     iteration: list = []
     action_list: list = [] 
 
+
+    # Model should only care about one trade at a time
+    # We can just have 10 separate models going to help negate risk
+    # If we 1000, each model is in charge of 100
+    # can maybe make an ensable model and use a neural net to choose the best trade
+    # Can easily train this 
+
+    # Or maybe just do multiple models and choose the one that resulted in the most profit, kind of like evolution
     def __init__(self):
         
         self.api = tradeapi.REST()
