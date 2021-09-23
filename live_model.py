@@ -120,40 +120,43 @@ class LiveModel():
         print(message)
 
         if message["stream"] == "AM.VTI":
-            curr_VTI_price = message["data"]["c"]
+            curr_VTI_price = round(np.log(message["data"]["c"]), 3)
             self.prev_10_VTI.append(curr_VTI_price)
+            print(curr_VTI_price)
             
         
         elif message["stream"] == "AM.VXUS":
-            curr_VXUS_price = message["data"]["c"]
+            curr_VXUS_price = round(np.log(message["data"]["c"]), 3)
             self.prev_10_VXUS.append(curr_VXUS_price)
+            print(curr_VXUS_price)
             
         
         elif message["stream"] == "AM.BND":
-            curr_BND_price = message["data"]["c"]
+            curr_BND_price = round(np.log(message["data"]["c"]), 3)
             self.prev_10_BND.append(curr_BND_price)
+            print(curr_BND_price)
             
         
         elif message["stream"] == "AM.SPY":
-            curr_SPY_price = message["data"]["c"]
+            curr_SPY_price = round(np.log(message["data"]["c"]), 3)
             self.prev_10_SPY.append(curr_SPY_price)
+            print(curr_SPY_price)
 
-            if len(self.prev_10_SPY) == 10:
+            if (len(self.prev_10_SPY) == 10 and len(self.prev_10_VXUS) > 0
+                and len(self.prev_10_BND) > 0 and len(self.prev_10_VTI) > 0):
                 self.fill_remaining()
     
     def fill_remaining(self):
 
-        if len(self.prev_10_VXUS) > 0:
-            for i in range(10 - len(self.prev_10_VXUS)):
-                self.prev_10_VXUS.append(self.prev_10_VXUS[len(self.prev_10_VXUS) - 1])
         
-        if len(self.prev_10_BND) > 0:
-            for i in range(10 - len(self.prev_10_BND)):
-                self.prev_10_BND.append(self.prev_10_BND[len(self.prev_10_BND) - 1])
+        for i in range(10 - len(self.prev_10_VXUS)):
+            self.prev_10_VXUS.append(self.prev_10_VXUS[len(self.prev_10_VXUS) - 1])
         
-        if len(self.prev_10_VTI) > 0:
-            for i in range(10 - len(self.prev_10_VTI)):
-                self.prev_10_VTI.append(self.prev_10_VTI[len(self.prev_10_VTI) - 1])
+        for i in range(10 - len(self.prev_10_BND)):
+            self.prev_10_BND.append(self.prev_10_BND[len(self.prev_10_BND) - 1])
+        
+        for i in range(10 - len(self.prev_10_VTI)):
+            self.prev_10_VTI.append(self.prev_10_VTI[len(self.prev_10_VTI) - 1])
 
     def get_random_action(self):
         return random.randint(1,3)
@@ -165,9 +168,10 @@ class LiveModel():
 
     def execute_buy(self):
         #Implement
-        self.api.submit_order(symbol="SPY", notional=100.00)
-        self.buy_prices.append(self.prev_10_SPY[9])     # Need to make dict and add in id?
-        return
+        if self.api.get_account().equity > 100:
+            self.api.submit_order(symbol="SPY", notional=100.00)
+            self.buy_prices.append(self.prev_10_SPY[9])     # Need to make dict and add in id?
+        
 
     def train(self, replay_memory, model, target_model, done):
         learning_rate = 0.7         # Learning rate
@@ -208,7 +212,6 @@ class LiveModel():
 
         return equity
 
-
     # WE SHOULD INCLUDE EQUITY AS MODEL INPUT
     def execute_action(self, action: int):
   
@@ -237,7 +240,7 @@ class LiveModel():
 
     def make_decision(self):
 
-        curr_state = self.prev_10_SPY + self.prev_10_VTI + self.prev_10_VXUS + self.prev_10_BND
+        curr_state = self.prev_10_SPY + self.prev_10_VTI + self.prev_10_VXUS + self.prev_10_BND # SOMETHING IS GOING WRONG HERE, LIKE IT'S NOT HAVE A FULL 10 FOR ALL OF THEM?
         curr_state = np.copy(curr_state)
         curr_state = np.append(curr_state, len(self.buy_prices))
         curr_state = np.append(curr_state, self.curr_money)
@@ -277,7 +280,6 @@ class LiveModel():
         
         self.current_money.append(self.curr_money)
         self.iteration.append(self.mins_into_week)
-
 
     def run(self, ws: websocket):
 
