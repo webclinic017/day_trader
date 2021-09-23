@@ -185,7 +185,7 @@ class ModelTrainer():
             end_date = date(2021, 8, 26)
 
             dates = []
-            for single_date in daterange(start_date, end_date):
+            for single_date in self.daterange(start_date, end_date):
                 dates.append(str(single_date))
 
             SPY_prices = []
@@ -197,16 +197,16 @@ class ModelTrainer():
             for i in tqdm(range(int(len(dates)))):
                 
                 SPY_barset = api.get_barset(symbols=['SPY'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                SPY_barset = fill_df(SPY_barset, 'SPY')  
+                SPY_barset = self.fill_df(SPY_barset, 'SPY')  
 
                 VTI_barset = api.get_barset(symbols=['VTI'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 39
-                VTI_barset = fill_df(VTI_barset, 'VTI')
+                VTI_barset = self.fill_df(VTI_barset, 'VTI')
 
                 VXUS_barset = api.get_barset(symbols=['VXUS'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                VXUS_barset = fill_df(VXUS_barset, 'VXUS')
+                VXUS_barset = self.fill_df(VXUS_barset, 'VXUS')
 
                 BND_barset = api.get_barset(symbols=['BND'], timeframe='1Min', limit=1000, start=dates[i]+'T10:00:00-04:00' , end=dates[i]+'T15:30:00-04:00').df # Getting all minute information for each day in the past year, whis is it length of 1000??? Should be 390
-                BND_barset = fill_df(BND_barset, 'BND')
+                BND_barset = self.fill_df(BND_barset, 'BND')
 
                 base_len = len(SPY_barset)
                 if base_len == 0 or len(VTI_barset) != base_len or len(VXUS_barset) != base_len or len(BND_barset) != base_len:
@@ -228,13 +228,13 @@ class ModelTrainer():
             with open("cache/BND_prices.pkl", 'wb') as f:
                 pickle.dump(BND_prices, f)
 
-        SPY_chunks, SPY_closing_prices = make_stationary(SPY_prices, True)
-        VTI_chunks = make_stationary(VTI_prices)
-        VXUS_chunks = make_stationary(VXUS_prices)
-        BND_chunks = make_stationary(BND_prices)
+        SPY_chunks, SPY_closing_prices = self.make_stationary(SPY_prices, True)
+        VTI_chunks = self.make_stationary(VTI_prices)
+        VXUS_chunks = self.make_stationary(VXUS_prices)
+        BND_chunks = self.make_stationary(BND_prices)
 
         chunks = [VTI_chunks, VXUS_chunks, BND_chunks]
-        total_chunks = combine_chunks(chunks, SPY_chunks)
+        total_chunks = self.combine_chunks(chunks, SPY_chunks)
 
         return total_chunks, SPY_closing_prices
         
@@ -511,8 +511,8 @@ class ModelTrainer():
         y = []
         max_profits = []
 
-        model = agent((44,), 3)
-        target_model = agent((44,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+        model = self.agent((44,), 3)
+        target_model = self.agent((44,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
         target_model.set_weights(model.get_weights())
         
         replay_memory = deque(maxlen=100_000)
@@ -547,7 +547,7 @@ class ModelTrainer():
 
                 # 3. Update the Main Network using the Bellman Equation
                 if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                    train(env, replay_memory, model, target_model, done)            # training the main model
+                    self.train(env, replay_memory, model, target_model, done)            # training the main model
                     
             
             episode += 1
@@ -560,7 +560,7 @@ class ModelTrainer():
             y.append(env.get_current_money())
             total_segment_reward = 0
 
-            save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
+            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
             
 
         X, Y = np.array(X).reshape(-1,1), np.array(y).reshape(-1,1)
@@ -580,7 +580,7 @@ class ModelTrainer():
         with open("old_y.pkl", 'wb') as f:
             pickle.dump(y, f)
 
-    def test(env: TrainingEnviroment):
+    def test(self, env: TrainingEnviroment):
 
         epsilon = 0.01 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
@@ -590,7 +590,7 @@ class ModelTrainer():
 
         total_length = int(len(env.chunks)/3)
         done = False
-
+    
         current_money = []
         iteration = []
         action_list = []
@@ -623,12 +623,12 @@ class ModelTrainer():
             
             action_list.append(action)
             reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-            new_state = env.get_current_state()                 # Getting the next step
+            new_state = env.get_current_state()                 # is this bad? Because maybe the model is assuming its affecting the market place with actions, should proboballt just update the current money and not the actual step
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
             # 3. Update the Main Network using the Bellman Equation
             if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                train(env, replay_memory, model, target_model, done)            # training the main model
+                self.train(env, replay_memory, model, target_model, done)            # training the main model
             
             if steps_to_update_target_model % 100 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                 episode += 1
