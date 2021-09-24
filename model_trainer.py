@@ -577,8 +577,8 @@ class ModelTrainer():
         y = []
         max_profits = []
 
-        model = self.agent((84,), 3)
-        target_model = self.agent((84,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+        model = self.agent((93,), 3)
+        target_model = self.agent((93,), 3) # Making neural net with input layer equal to state space size, and output layer equal to action space size
         target_model.set_weights(model.get_weights())
         
         replay_memory = deque(maxlen=100_000)
@@ -611,7 +611,15 @@ class ModelTrainer():
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
                 new_state[-3] = env.curr_money
-                new_state[-4] = len(env.buy_prices)
+                
+                index = -4
+                for i in range(9,-1,-1):
+
+                    try:
+                        new_state[index] = np.log(env.buy_prices[i])
+                    except:
+                        new_state[index] = 0
+                    index -= 1
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -641,8 +649,6 @@ class ModelTrainer():
         plt.plot( X, LinearRegression().fit(X, Y).predict(X))
         plt.show()
 
-
-        # Give reward after each trade vs every 100 try that
 
         with open("old_x.pkl", 'wb') as f:
             pickle.dump(X, f)

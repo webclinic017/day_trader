@@ -73,7 +73,13 @@ class TrainingEnviroment:
     def get_current_state(self):
         
         curr_state = np.copy(self.chunks[self.curr_chunk])
-        curr_state = np.append(curr_state, len(self.buy_prices))
+
+        buy_prices_list = list(np.log(self.buy_prices))
+
+        for i in range(10-len(self.buy_prices)):
+            buy_prices_list.append(0)
+
+        curr_state = np.append(curr_state, buy_prices_list)
         curr_state = np.append(curr_state, self.curr_money)
         curr_state = np.append(curr_state, self.num_chunks)
         curr_state = np.append(curr_state, self.goal_profit)
@@ -213,3 +219,5 @@ class TrainingEnviroment:
     def begin(self):
         self.curr_chunk += 1
         return self.chunks[0]
+
+
