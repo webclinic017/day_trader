@@ -299,7 +299,7 @@ class ModelTrainer():
         vol_chunks = [VTI_vol, VXUS_vol, BND_vol]
 
         total_chunks = self.combine_chunks(price_chunks, vol_chunks, SPY_prices, SPY_vol)
-        
+
         return total_chunks, SPY_closing_prices
         
     def segment_chunks(self, chunks_by_days: list):
@@ -542,36 +542,36 @@ class ModelTrainer():
 
     def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
         
-        model.save(f"model_1_{it_num}")
+        model.save(f"model_2_{it_num}")
 
-        target_model.save(f"target_model_1_{it_num}")
+        target_model.save(f"target_model_2_{it_num}")
 
-        with open(f"replay_mem_1_{it_num}.pkl", 'wb') as f:
+        with open(f"replay_mem_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
         
-        with open(f"X_1_{it_num}.pkl", 'wb') as f:
+        with open(f"X_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(X, f)
         
-        with open(f"Y_1_{it_num}.pkl", 'wb') as f:
+        with open(f"Y_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(Y, f)
         
-        with open(f"max_profits_1_{it_num}.pkl", 'wb') as f:
+        with open(f"max_profits_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(max_profits, f)
         
         if it_num != 0:
-            shutil.rmtree(f"model_1_{it_num-1}")
-            shutil.rmtree(f"target_model_1_{it_num-1}")
-            os.remove(f"replay_mem_1_{it_num-1}.pkl")
-            os.remove(f"X_1_{it_num-1}.pkl")
-            os.remove(f"Y_1_{it_num-1}.pkl")
-            os.remove(f"max_profits_1_{it_num-1}.pkl")
+            shutil.rmtree(f"model_2_{it_num-1}")
+            shutil.rmtree(f"target_model_2_{it_num-1}")
+            os.remove(f"replay_mem_2_{it_num-1}.pkl")
+            os.remove(f"X_2_{it_num-1}.pkl")
+            os.remove(f"Y_2_{it_num-1}.pkl")
+            os.remove(f"max_profits_2_{it_num-1}.pkl")
         
     def simulate(self, env: TrainingEnviroment):
 
         epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
         min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-        decay = 0.001       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
+        decay = 0.005       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
         episode = 0
         total_segment_reward = 0
 
@@ -587,7 +587,7 @@ class ModelTrainer():
 
 
 
-        for i in tqdm(range(10000)):
+        for i in tqdm(range(1000)):
 
             done = False
             steps_to_update_target_model = 0
@@ -615,10 +615,10 @@ class ModelTrainer():
                 new_state[-3] = env.curr_money
                 
                 index = -4
-                for i in range(9,-1,-1):
+                for k in range(9,-1,-1):
 
                     try:
-                        new_state[index] = np.log(env.buy_prices[i])
+                        new_state[index] = np.log(env.buy_prices[k])
                     except:
                         new_state[index] = 0
                     index -= 1

@@ -70,7 +70,6 @@ class LiveModel():
         
         self.buy_prices = []
         self.curr_money = float(self.api.get_account().equity)
-        print(self.curr_money)
         self.goal_money = self.curr_money * 1.05
         self.mins_into_week = 0
 
@@ -113,10 +112,8 @@ class LiveModel():
         return total/9
 
     def execute_buy(self):
-        #Implement
-        if self.api.get_account().equity > 100:
-            self.api.submit_order(symbol="SPY", notional=100.00)
-            self.buy_prices.append(self.prev_10_SPY[9])     # Need to make dict and add in id?
+        
+        self.api.submit_order(symbol="SPY", notional=100.00)
         
     def train(self, replay_memory, model, target_model, done):
         learning_rate = 0.7         # Learning rate
@@ -152,7 +149,7 @@ class LiveModel():
     def execute_sell(self):
 
         self.api.close_position("SPY")
-        equity = self.api.get_account().equity
+        equity = float(self.api.get_account().equity)
         self.curr_money = equity
 
         return equity
@@ -161,12 +158,15 @@ class LiveModel():
   
         reward = 0
 
+        print("In here")
+
         if action == 1:
 
             if self.curr_money > 100:
                 self.buy_prices.append(self.prev_10_SPY[9])
                 self.execute_buy()
                 self.curr_money -= 100
+                print("Decided to buy")
 
 
         elif action == 2:
@@ -174,29 +174,30 @@ class LiveModel():
             if self.buy_prices:
                 past_avg = self.get_10min_avg()
                 reward = self.prev_10_SPY[9] - past_avg
+                print("Decided to hold")
 
         elif action == 3:
             old_money = self.curr_money
             new_money = self.execute_sell()
             reward = new_money - old_money
+            print("Decided to sell")
+
 
         return reward
 
     def make_decision(self):
 
-        curr_state = self.prev_10_SPY + self.prev_10_VTI + self.prev_10_VXUS + self.prev_10_BND # SOMETHING IS GOING WRONG HERE, LIKE IT'S NOT HAVE A FULL 10 FOR ALL OF THEM?
-
-        print(len( self.prev_10_SPY))
-        print(len( self.prev_10_VTI))
-        print(len( self.prev_10_VXUS))
-        print(len( self.prev_10_BND))
+        curr_state = np.array(self.prev_10_SPY)
+        curr_state = np.append(curr_state, self.prev_10_VTI)
+        curr_state = np.append(curr_state, self.prev_10_VXUS)
+        curr_state = np.append(curr_state, self.prev_10_BND)
 
         curr_state = np.copy(curr_state)
         curr_state = np.append(curr_state, len(self.buy_prices))
         curr_state = np.append(curr_state, self.curr_money)
         curr_state = np.append(curr_state, self.mins_into_week)
         curr_state = np.append(curr_state, self.goal_money)
-
+        
         self.mins_into_week += 1
 
         if self.mins_into_week > 1499 and self.mins_into_week % 1500:       # Make this more sophisticated by checking actual dates
@@ -211,7 +212,9 @@ class LiveModel():
             predicted = self.model.predict(current_reshaped).flatten()
             action = np.argmax(predicted) 
 
+
         self.action_list.append(action)
+        print("ACTION: " + str(action))
         reward = self.execute_action(action)
         
         new_state = curr_state
