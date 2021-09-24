@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from dateutil import parser
 from training_enviroment import TrainingEnviroment
 
+# Should give the model the list of buy prices, not just the length, not sure if it has memeory or not 
 class ModelTrainer():
 
     def daterange(self, start_date, end_date):
@@ -122,7 +123,7 @@ class ModelTrainer():
             return filled_closing_prices, filled_volume
         
         else: 
-            return []
+            return [], []
 
     def create_testing_chunks(self):
         
@@ -274,20 +275,30 @@ class ModelTrainer():
             with open("cache/BND_vol.pkl", 'wb') as f:
                 pickle.dump(BND_vol, f)
 
-        SPY_chunks, SPY_closing_prices = self.make_stationary(SPY_prices, True)
-        VTI_chunks = self.make_stationary(VTI_prices)
-        VXUS_chunks = self.make_stationary(VXUS_prices)
-        BND_chunks = self.make_stationary(BND_prices)
+        print(len(SPY_prices))
+        print(len(VTI_prices))
+        print(len(VXUS_prices))
+        print(len(BND_prices))
 
-        SPY_vol_chunks = self.make_stationary(SPY_vol)
-        VTI_vol_chunks = self.make_stationary(VTI_vol)
-        VXUS_vol_chunks = self.make_stationary(VXUS_vol)
-        BND_vol_chunks = self.make_stationary(BND_vol)
+        print(len(SPY_vol))
+        print(len(VTI_vol))
+        print(len(VXUS_vol))
+        print(len(BND_vol))
 
-        price_chunks = [VTI_chunks, VXUS_chunks, BND_chunks]
-        vol_chunks = [VTI_vol_chunks, VXUS_vol_chunks, BND_vol_chunks]
+        SPY_prices, SPY_closing_prices = self.make_stationary(SPY_prices, True)
+        VTI_prices = self.make_stationary(VTI_prices)
+        VXUS_prices = self.make_stationary(VXUS_prices)
+        BND_prices = self.make_stationary(BND_prices)
 
-        total_chunks = self.combine_chunks(price_chunks, vol_chunks, SPY_chunks, SPY_vol_chunks)
+        SPY_vol = self.make_stationary(SPY_vol)
+        VTI_vol = self.make_stationary(VTI_vol)
+        VXUS_vol = self.make_stationary(VXUS_vol)
+        BND_vol = self.make_stationary(BND_vol)
+
+        price_chunks = [VTI_prices, VXUS_prices, BND_prices]
+        vol_chunks = [VTI_vol, VXUS_vol, BND_vol]
+
+        total_chunks = self.combine_chunks(price_chunks, vol_chunks, SPY_prices, SPY_vol)
 
         return total_chunks, SPY_closing_prices
         
@@ -346,7 +357,7 @@ class ModelTrainer():
             
             total_chunks.append([val for pair in zip(price_SPY_chunks[i], vol_SPY_chunks[i]) for val in pair])
             
-            for k in price_chunks:
+            for k in range(len(price_chunks)):
                 total_chunks[i] += [val for pair in zip(price_chunks[k][i], vol_chunks[k][i]) for val in pair]
         
         return total_chunks
@@ -582,7 +593,6 @@ class ModelTrainer():
 
             while(not done):
 
-                
                 total_segment_reward += 1
                 steps_to_update_target_model += 1 
                 random_number = np.random.rand()

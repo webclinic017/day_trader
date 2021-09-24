@@ -69,7 +69,8 @@ class LiveModel():
             self.replay_memory = pickle.load(f)
         
         self.buy_prices = []
-        self.curr_money = self.api.get_account().equity
+        self.curr_money = float(self.api.get_account().equity)
+        print(self.curr_money)
         self.goal_money = self.curr_money * 1.05
         self.mins_into_week = 0
 
@@ -184,6 +185,12 @@ class LiveModel():
     def make_decision(self):
 
         curr_state = self.prev_10_SPY + self.prev_10_VTI + self.prev_10_VXUS + self.prev_10_BND # SOMETHING IS GOING WRONG HERE, LIKE IT'S NOT HAVE A FULL 10 FOR ALL OF THEM?
+
+        print(len( self.prev_10_SPY))
+        print(len( self.prev_10_VTI))
+        print(len( self.prev_10_VXUS))
+        print(len( self.prev_10_BND))
+
         curr_state = np.copy(curr_state)
         curr_state = np.append(curr_state, len(self.buy_prices))
         curr_state = np.append(curr_state, self.curr_money)

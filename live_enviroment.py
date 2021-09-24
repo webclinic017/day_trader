@@ -1,3 +1,4 @@
+from datetime import datetime
 import alpaca_trade_api as tradeapi
 import websocket, json
 from collections import deque
@@ -5,6 +6,10 @@ import os
 from live_model import LiveModel
 from threading import Thread
 import numpy as np
+from datetime import date, timedelta
+from dateutil import parser
+
+
 
 class LiveEnviroment():
 
@@ -12,12 +17,13 @@ class LiveEnviroment():
     auth_data: dict
     socket_url: str
     ws: websocket
+    prev_min: datetime
 
     live_model: LiveModel
 
 
     def __init__(self) -> None:
-        
+
         self.api = tradeapi.REST()
         self.auth_data = {
             "action": "authenticate",
@@ -36,6 +42,7 @@ class LiveEnviroment():
         listen_message = {"action": "listen", "data": {"streams": ["AM.SPY", "AM.VXUS", "AM.VTI", "AM.BND"]}}
         ws.send(json.dumps(listen_message))
 
+       
         thread = Thread(target = self.live_model.start_action_loop, args = ())
         thread.start()
 
@@ -74,3 +81,11 @@ class LiveEnviroment():
             if (len(self.live_model.prev_10_SPY) == 10 and len(self.live_model.prev_10_VXUS) > 0
                 and len(self.live_model.prev_10_BND) > 0 and len(self.live_model.prev_10_VTI) > 0):
                 self.live_model.fill_remaining()
+
+
+def main():
+    model_live = LiveEnviroment()
+    return
+
+if __name__ == '__main__':
+    main()

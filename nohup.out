@@ -1,0 +1,31 @@
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+2021-09-24 11:01:25.925267: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  0%|          | 0/10000 [00:00<?, ?it/s]2021-09-24 11:01:26.092512: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+Made it to $999.7 - Max Money: 1000.19 -  it number: 0 - epsilon: 0.9990104948350412
+2021-09-24 11:01:40.961413: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
+  0%|          | 1/10000 [00:15<43:27:54, 15.65s/it]Made it to $1000.6 - Max Money: 1000.64 -  it number: 1 - epsilon: 0.9980219786806598
+  0%|          | 2/10000 [00:50<74:17:46, 26.75s/it]Made it to $999.5 - Max Money: 1000.03 -  it number: 2 - epsilon: 0.9970344505483393
+  0%|          | 3/10000 [01:25<85:00:48, 30.61s/it]Made it to $1000.3 - Max Money: 1000.64 -  it number: 3 - epsilon: 0.9960479094505515
+  0%|          | 4/10000 [02:00<90:24:03, 32.56s/it]Made it to $999.8 - Max Money: 1000.07 -  it number: 4 - epsilon: 0.9950623544007555
+  0%|          | 5/10000 [02:36<93:05:37, 33.53s/it]Made it to $1000.46 - Max Money: 1000.59 -  it number: 5 - epsilon: 0.9940777844133959
+  0%|          | 6/10000 [03:11<94:29:42, 34.04s/it]Made it to $1000.3 - Max Money: 1000.4 -  it number: 6 - epsilon: 0.9930941985039028
+  0%|          | 7/10000 [03:46<95:27:05, 34.39s/it]Made it to $1000.1 - Max Money: 1000.83 -  it number: 7 - epsilon: 0.99211159568869
+  0%|          | 8/10000 [04:21<96:21:54, 34.72s/it]Made it to $999.6 - Max Money: 1000.57 -  it number: 8 - epsilon: 0.9911299749851548
+  0%|          | 9/10000 [04:58<97:56:42, 35.29s/it]Made it to $999.0 - Max Money: 1000.44 -  it number: 9 - epsilon: 0.9901493354116764
+  0%|          | 10/10000 [05:33<98:13:48, 35.40s/it]Made it to $999.8 - Max Money: 1000.55 -  it number: 10 - epsilon: 0.9891696759876151
+  0%|          | 11/10000 [06:09<98:29:31, 35.50s/it]Made it to $1000.9 - Max Money: 1000.9 -  it number: 11 - epsilon: 0.9881909957333113
+  0%|          | 12/10000 [06:45<98:37:14, 35.55s/it]Made it to $999.2 - Max Money: 1000.04 -  it number: 12 - epsilon: 0.9872132936700847
+  0%|          | 13/10000 [07:20<98:35:41, 35.54s/it]Made it to $1000.14 - Max Money: 1000.32 -  it number: 13 - epsilon: 0.9862365688202333
+  0%|          | 14/10000 [07:56<98:49:46, 35.63s/it]Made it to $1003.5 - Max Money: 1004.44 -  it number: 14 - epsilon: 0.985260820207032
+  0%|          | 15/10000 [08:32<99:14:36, 35.78s/it]Made it to $1001.0 - Max Money: 1001.1 -  it number: 15 - epsilon: 0.9842860468547323
+  0%|          | 16/10000 [09:09<99:35:12, 35.91s/it]Made it to $1001.0 - Max Money: 1001.02 -  it number: 16 - epsilon: 0.9833122477885605
+  0%|          | 17/10000 [09:47<101:34:28, 36.63s/it]/usr/local/Cellar/python@3.9/3.9.6/Frameworks/Python.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
