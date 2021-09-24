@@ -138,7 +138,7 @@ class ModelTrainer():
             end_date = date(2021, 9, 7)
 
             dates = []
-            for single_date in daterange(start_date, end_date):
+            for single_date in self.daterange(start_date, end_date):
                 dates.append(str(single_date) + 'T00:00:00-00:00')
 
             chunks = []
@@ -179,7 +179,7 @@ class ModelTrainer():
         #closing_prices = get_closing_daily_price(chunks_by_days)
         #rsi = create_rsi(closing_prices)
         rsi = []
-        chunks = get_emas(chunks_by_days, 10, rsi)
+        chunks = self.get_emas(chunks_by_days, 10, rsi)
 
         return chunks
 
@@ -299,7 +299,7 @@ class ModelTrainer():
         vol_chunks = [VTI_vol, VXUS_vol, BND_vol]
 
         total_chunks = self.combine_chunks(price_chunks, vol_chunks, SPY_prices, SPY_vol)
-
+        
         return total_chunks, SPY_closing_prices
         
     def segment_chunks(self, chunks_by_days: list):
@@ -327,22 +327,24 @@ class ModelTrainer():
     def make_stationary(self, prices: dict, get_close: bool = False):
 
         
+
         closing_prices = []
         price_df = pd.DataFrame()
         price_df['prices'] = prices
-        price_df['prices'] = price_df['prices'].apply(np.log)
+        price_df['new_prices'] = price_df['prices'].apply(np.log)
 
-        prices = list(price_df['prices'])
+        new_prices = list(price_df['new_prices'])
+        old_prices = list(price_df['prices'])
 
         for i in range(len(prices)):
-            prices[i] = round(prices[i], 3)
+            prices[i] = round(new_prices[i], 3)
 
         chunks = []
         for i in range(len(prices)):
             
             if i+10 < len(prices):
                 chunks.append(prices[i:i+10])
-                closing_prices.append(prices[i:i+10][-1])
+                closing_prices.append(old_prices[i:i+10][-1])
         
         if get_close:
             return chunks, closing_prices
