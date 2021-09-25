@@ -4,7 +4,7 @@ from tensorflow import keras
 from collections import deque
 import random
 import alpaca_trade_api as tradeapi
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import matplotlib.pyplot as plt
 import pickle
 import os.path
@@ -21,11 +21,32 @@ from training_enviroment import TrainingEnviroment
 # Should give the model the list of buy prices, not just the length, not sure if it has memeory or not 
 class ModelTrainer():
 
-    def daterange(self, start_date, end_date):
+    def daterange(self, start_date: datetime, end_date: datetime):
+        """ Outputs a list of dates from the given start
+        to the given end
+
+        Arguments:
+            start_date (datetime): The date to start at
+
+            end_date (datetime): The date to end at
+
+        Return:
+            dates (list): List of all dates inbetween the start and finish
+        """
+
         for n in range(int((end_date - start_date).days)):
             yield start_date + timedelta(n)
 
     def create_rsi(self, closing_price:list):
+        """ Creates list of rising stock index in correlation to 
+        a list of prices, not currently in use
+
+        Arguments:
+            closing_price (list): List of all prices to be converted
+
+        Return:
+            rsi (list): List of relative stock index in correlation with the prices
+        """
 
         df = pd.DataFrame()
         df["close"] = pd.Series(closing_price)
@@ -47,6 +68,21 @@ class ModelTrainer():
         return rsi
 
     def fill_df(self, df: pd.DataFrame(), ticker: str) -> list:
+        """ Finds missing minutes in pandas data frame index and
+        approprialtey fills those missing minutes with the general average or, if available
+        the price that came before it
+
+
+        Arguments:
+            df (DataFrame): The returned data frame from Alpaca's API
+
+            ticket (str): The associated ticker with the data frame
+
+        Return:
+            filled_closing_prices (list): List of completed closing prices with no missing time indexes
+
+            filled_volume (list): List of completed volume indicators, with no missing time indexes
+        """
 
         times = list(df.index)
         new_times = []
@@ -126,7 +162,20 @@ class ModelTrainer():
             return [], []
 
     def create_testing_chunks(self):
-        
+        """ If not already created, creates list of 3 year date range, downloades
+        associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
+        and applies the nessesary transformations on it.
+
+
+        Arguments:
+            None
+
+        Return:
+            total_chunks (list): List of total segmented chunks
+
+            closing_prices (list): List of actual dollar values to be associated with the chunks
+        """
+
         if os.path.isfile("cache/test_data.pkl"):
             with open("cache/test_data.pkl", "rb") as f:
                 chunks_by_days =  pickle.load(f)
@@ -184,7 +233,20 @@ class ModelTrainer():
         return chunks
 
     def create_training_chunks(self):
-        
+        """ If not already created, creates list of 3 year date range, downloades
+        associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
+        and applies the nessesary transformations on it.
+
+
+        Arguments:
+            None
+
+        Return:
+            total_chunks (list): List of total segmented chunks
+
+            closing_prices (list): List of actual dollar values to be associated with the chunks
+        """
+
         if os.path.isfile("cache/SPY_prices.pkl"):
             
             with open("cache/SPY_prices.pkl", "rb") as f:
@@ -302,7 +364,18 @@ class ModelTrainer():
 
         return total_chunks, SPY_closing_prices
         
-    def segment_chunks(self, chunks_by_days: list):
+    def segment_chunks(self, chunks_by_days: dict):
+        """ Takes dictionary of chunks separated by the day and returns a list
+        of the total chunks combined
+
+
+        Arguments:
+            chunks_by_days (dict): Dictionary of all of the chunks associated to their day
+
+        Return:
+            total_chunks (list): List of total segmented chunks
+
+        """
 
         total_chunks = []
 
@@ -314,6 +387,17 @@ class ModelTrainer():
         return total_chunks
 
     def get_closing_prices(self, chunks_by_days: dict):
+        """ Takes dictionary of chunks separated by the day and returns a list
+        of the total closing prices
+
+
+        Arguments:
+            chunks_by_days (dict): Dictionary of all of the chunks associated to their day
+
+        Return:
+            closing_prices (list): List of total segmented closing prices
+
+        """
 
         closing_prices = []
         for day in chunks_by_days:
@@ -325,8 +409,21 @@ class ModelTrainer():
         return closing_prices
 
     def make_stationary(self, prices: dict, get_close: bool = False):
+        """ Takes list of prices and makes the data statioanry by applying
+        log transformation to it. Captures orgiional list of prices if get_close
+        is True
 
-        
+        Arguments:
+            prices (list): List of all prices to transform
+
+            get_close (bool): Boolean to dictate whether to save origional price numbers
+            or not 
+
+        Return:
+            chunks (list): Total prices transformed and chunked into segments of 10
+
+            closing_prices (list): List of closing prices 
+        """
 
         closing_prices = []
         price_df = pd.DataFrame()
@@ -352,6 +449,23 @@ class ModelTrainer():
             return chunks
 
     def combine_chunks(self, price_chunks: list, vol_chunks: list, price_SPY_chunks: list, vol_SPY_chunks: list):
+        """ Takes list of all the different segmented chunks from the four stocks, in combination
+        with their segements volume chunks and combines them all into one chunk for each iteration
+
+        Arguments:
+            price_chunks (list): List of lists for each stock and their prices
+
+            vol_chunks (list): List of lists for each stock and their volume
+
+            price_SPY_chunks (list): Only the prices for the SPY stock, so we can make sure its
+            first
+
+            vol_SPY_chunks (list): Only the volumes for the SPY stock, so we can make sure its
+            first
+
+        Return:
+            total_chunks (list): List of all combined chunks
+        """
 
         total_chunks = []
 
@@ -365,6 +479,20 @@ class ModelTrainer():
         return total_chunks
 
     def transform_relative(self, chunks_by_days, spy: bool = False):
+        """ Takes dictionary of chunks associated with their days 
+        and transforms the price to be a percentage relative to their
+        neighbour
+
+        Arguments:
+            chunks_by_days (dict): Dictionary of the days to their chunks
+
+            spy (bool): Boolean of whether current dictionary is the SPY stock
+            or not, to dictate whether to capture the closing values or not.
+
+        Return:
+            new_chunks_by_days (dict): Dictionary of days associated with their
+            relaitve prices
+        """
 
         prev_price = 0
         new_chunks_by_days = {}
@@ -408,6 +536,15 @@ class ModelTrainer():
             return new_chunks_by_days                         
 
     def get_closing_daily_price(self, chunks_by_days: dict):
+        """ Takes dictionary of chunks associated with their days 
+        and gets the closing prices for each day on average
+
+        Arguments:
+            chunks_by_days (dict): Dictionary of the days to their chunks
+
+        Return:
+            closing_prices (list): List of closing day prices
+        """
 
         closing_prices = []
 
@@ -426,6 +563,18 @@ class ModelTrainer():
         return closing_prices
 
     def create_ema(self, day_average_list: list, num_days: int):
+        """ Takes the average price by day and computes the expoential moving average
+        based on the time frame given
+
+        Arguments:
+            day_average_list (list): List of the average price per day
+
+            num_days (int): The time frame to calculate the ema in 
+
+        Return:
+            ema_daily (list): List of ema for each given day
+        """
+        
         ema_daily = []
         prev_ema = 0
 
@@ -449,56 +598,26 @@ class ModelTrainer():
         
         return ema_daily
 
-    def get_emas(self, chunks_by_days: dict, new_chunks_by_days: dict, num_of_min):
-
-        day_average_list = []
-
-        for day in chunks_by_days:
-
-            chunks = chunks_by_days[day]
-            day_total = 0
-            day_avg = 0
-
-            for chunk in chunks:
-                for i in range(len(chunk)):
-                    day_total += chunk[i]
-            
-            day_avg = day_total / (len(chunk) * num_of_min)
-            day_average_list.append(day_avg)
-
+    def agent(self, state_shape: int, action_shape: int):
+        """ Takes the current state shape and the action space shape
+        to create neural network paramterized for this. Yses relu activation
+        and HEUniform transformation normalizer. 36 Hidden layers all together 
         
-        ema_daily_50 = create_ema(day_average_list, 50)
-        ema_daily_20 = create_ema(day_average_list, 20)
-        ema_daily_10 = create_ema(day_average_list, 10)
-        ema_daily_5 = create_ema(day_average_list, 5)
-        
-        
-        total_chunks = []
-        ema_ranges = {49:ema_daily_50, 19:ema_daily_20, 9:ema_daily_10, 4:ema_daily_5}
-    
-            
-        i = 0
-        for k in range(49, len(new_chunks_by_days.keys())):                         # Starting at 49 because all other ranges fall under this, this is upper limit
-            
-            for chunk in new_chunks_by_days[list(new_chunks_by_days.keys())[k]]: 
-                
-                chunk.append(ema_ranges[49][i])
-                chunk.append(ema_ranges[19][i])
-                chunk.append(ema_ranges[9][i])
-                chunk.append(ema_ranges[4][i])
+        Notes:
+            The agent maps X-states to Y-actions
+            e.g. The neural network output is [.1, .7, .1, .3]      # Is this the q value then?
+            The highest value 0.7 is the Q-Value.
+            The index of the highest action (0.7) is action #1.     # So q value for all possible actions, highest is chosen
 
-                total_chunks.append(chunk)
+        Arguments:
+            state_shape (int): The shape of the current state space
 
-            i += 1
+            action_shape (int): The shape of the current action space
         
-        return total_chunks
-
-    def agent(self, state_shape, action_shape):
-        """ The agent maps X-states to Y-actions
-        e.g. The neural network output is [.1, .7, .1, .3]      # Is this the q value then?
-        The highest value 0.7 is the Q-Value.
-        The index of the highest action (0.7) is action #1.     # So q value for all possible actions, highest is chosen
+        Return:
+            model (keras.neural_net): Neural network by keras
         """
+
         learning_rate = 0.001       #Exploration rate
         init = tf.keras.initializers.HeUniform()        #Certain normalizer?
         model = keras.Sequential()      #Must be type of neural net?
@@ -508,8 +627,26 @@ class ModelTrainer():
         model.compile(loss=tf.keras.losses.Huber(), optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), metrics=['accuracy'])
         return model
 
-    def train(self, env, replay_memory, model, target_model, done):
+    def train(self, env: TrainingEnviroment, replay_memory: deque, model: object, target_model: object, done: bool):
+        """ Thes the current enviroment, replay memeory, model and target model
+        to test if there is enoguh memory cached. If there is, takes a random 128 
+        examples from the memory and uses that to retrain the target model 
         
+        Arguments:
+            env (TrainingEnviroment): The current TrainingEnviroment object assoicated with the training
+
+            replay_memory (deque): The current cached memeory associated with the training
+
+            model (object): The given neural network
+
+            target_model (object): The given nerual network to train
+
+            done (bool): Whether training has finished or not
+        
+        Return:
+            None
+        """
+
         learning_rate = 0.7         # Learning rate
         discount_factor = 0.618     # Not sure? 
 
@@ -541,7 +678,31 @@ class ModelTrainer():
         model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
     def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
+        """ Takes current enviroemnt varaibles and saves them into pickled files or uses
+        Keras's built in model save function to save map of varaibles for each iterations 
         
+        Arguments:
+            model (object): The current neural network
+
+            target_model (object): The given nerual network to train
+
+            it_num (int): The current iteration number
+
+            replay_mem (deque): The current replay memory for iteration
+
+            X (list): The list of iterations thus far
+
+            Y (list): The list of end money values thus far
+
+            max_profits (list): The list of the max profits achieved for each iteration
+        
+        Return:
+            None
+
+        Side Effects:
+            Files created for all varaibles and files deleted for all varaibles
+        """
+
         model.save(f"model_2_{it_num}")
 
         target_model.save(f"target_model_2_{it_num}")
@@ -567,6 +728,18 @@ class ModelTrainer():
             os.remove(f"max_profits_2_{it_num-1}.pkl")
         
     def simulate(self, env: TrainingEnviroment):
+        """ Overal model controller for the model and the training enviroments. 
+        Controls the flow of inforamtion and helps simulate realtime data extraction
+        for the model to learn on. Gives the model the current states, exectutes the action,
+        updates the state and trains the model if nesseary. Also controls tracking of all
+        relevant meta-data around training process.
+        
+        Arguments:
+            env (TrainingEnviroment): The associated training enviroment with the model
+        
+        Return:
+            None
+        """
 
         epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
@@ -659,6 +832,18 @@ class ModelTrainer():
             pickle.dump(y, f)
 
     def test(self, env: TrainingEnviroment):
+        """ Overal model controller for the model and the training enviroments. 
+        Controls the flow of inforamtion and helps simulate realtime data extraction
+        for the model to learn on. Gives the model the current states, exectutes the action,
+        updates the state and trains the model if nesseary. Also controls tracking of all
+        relevant meta-data around training process. Only runs for the past year.
+        
+        Arguments:
+            env (TrainingEnviroment): The associated training enviroment with the model
+        
+        Return:
+            None
+        """
 
         epsilon = 0.01 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
@@ -727,6 +912,16 @@ class ModelTrainer():
             pickle.dump(action_list, f)
 
     def trend_analysis():
+        """ Takes the currnet data files for iterations and prices from
+        hardcoded variables. Plots into line graph and plots best fit line 
+        across for general trend analysis.
+        
+        Arguments:
+            None
+        
+        Return:
+            None
+        """
 
         with open("iteration.pkl", 'rb') as f:
             X = np.array(pickle.load(f))
@@ -744,7 +939,6 @@ class ModelTrainer():
         print(f"Slop: {m}")
         plt.show()
     
-
 def main():
 
     trainer_model = ModelTrainer()
@@ -757,8 +951,6 @@ def main():
     #test(env)
 
    #trend_analysis()
-
-
 
 if __name__ == '__main__':
     main()
