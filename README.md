@@ -1,7 +1,11 @@
 # DEEP Q-VALUE REINFORCEMENT DAY TRADING
 
 # Introduction
+This git repo represents a personal project I've worked on the past four months and am continuing to work on for grad school projects. I currently work as a machine learning engineer for Copia Wealth Studios, a financial analysis company for ultra high net-worth clients. The majority of my work thus far has been building a production ML pipeline for document ingestion and ananlysis, with smaller projects focused on specific assest class clustering algorithims. 
 
+I first began this project as I've also held a deep intrest in machine learning's application twords the stock market. It seems such a natural application of the concept. However, after any research one can easily see that this is everyone's first instinct, and it has not been widly accomplished due to one singular reason. There is no predictve correlation in historic stock price to it's current price. It's mathematically proven that a stock price, in relation to itself, is purley random. Thus, time-series analysis applied directly to this problem is a futile task. However, one must consdier that the individual stocks price is only a small subset of data one can gather when trading. For example, a day trader might have 15 different graphs open at once when analysing the market. With this in mind, we can approach the problem of machine learning's application to day trading with new vigour. If we can provide outside indicators to the problem, then surely we can train a model? Yet, most ML models are poorly suited for multi-factored numeric input over a time-series, and it would be impossible to create a training set of all possible states of the market for a typical classifiaction model.
+
+This is where reinforcement learning comes. Allowing the algorithm to simply play in a market enviroment over n solutions and train itself seems the perfect solution. 
 
 # Installation
  Firstly, you must install all required dependencies. To do this, please run:
