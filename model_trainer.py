@@ -991,6 +991,9 @@ class ModelTrainer():
 
 def main():
 
+    if not os.path.exists('cache'):
+        os.makedirs('cache')
+
     trainer_model = ModelTrainer()
     chunks, closing_prices = trainer_model.create_training_chunks()
     env = TrainingEnviroment(chunks, closing_prices)
