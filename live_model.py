@@ -42,18 +42,20 @@ class LiveModel():
 
     STOP_SIG: bool = False
 
-    # Model should only care about one trade at a time
-    # We can just have 10 separate models going to help negate risk
-    # If we 1000, each model is in charge of 100
-    # can maybe make an ensable model and use a neural net to choose the best trade
-    # Can easily train this 
+    def __init__(self) -> None:
+        """ Base initializer function. Creates new ALPACA trading API,
+        initializes the prev_10 containers as deque's as length of 10, 
+        loads in previous models and sets montetary trackers and goals.
 
-    # Or maybe just do multiple models and choose the one that resulted in the most profit, kind of like evolution
+        Arguments:
+            None
 
-    # DONT FORGET TO MAKE EVERYTHING RELATIVE
-    # Fuck all that, give the input the array of buy prices, 0's if none exist, then the  model can output an array of 1's and 0's at each index position to dictate whether to sell or not
-    # Fixing the state change in training, just updating prices and shit, the price wouldn't move, should allow the model to fiure out that it can't sell something that doesnt exist
-    def __init__(self):
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
         
         self.api = tradeapi.REST()
 
@@ -73,7 +75,20 @@ class LiveModel():
         self.goal_money = self.curr_money * 1.05
         self.mins_into_week = 0
 
-    def  start_action_loop(self):
+    def  start_action_loop(self) -> None:
+        """ Creates continuous loop to firstly check if 
+        we have 10min of history yet, if we do, calls
+        our model on our current input space. Does this once a min.
+
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
 
         while(not self.STOP_SIG):
 
@@ -91,8 +106,21 @@ class LiveModel():
             
             time.sleep(60)
   
-    def fill_remaining(self):
+    def fill_remaining(self) -> None:
+        """ Takes most recent value and repeats it in dequeue
+        until it is filled. This is under the assumption the 
+        lack of incoming data for the stock is due to the price
+        not changing.
+        
+        Arguments:
+            None
 
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
         
         for i in range(10 - len(self.prev_10_VXUS)):
             self.prev_10_VXUS.append(self.prev_10_VXUS[len(self.prev_10_VXUS) - 1])
@@ -103,19 +131,68 @@ class LiveModel():
         for i in range(10 - len(self.prev_10_VTI)):
             self.prev_10_VTI.append(self.prev_10_VTI[len(self.prev_10_VTI) - 1])
 
-    def get_random_action(self):
+    def get_random_action(self) -> int:
+        """ Gets a random numbber between [1,3], inclusive
+        
+        Arguments:
+            None
+
+        Return:
+            random_action (int): Random number between 1 and 3
+        
+        Side Effects:
+            None
+        """
+
         return random.randint(1,3)
     
-    def get_10min_avg(self):
+    def get_10min_avg(self) -> int:
+        """ Gets the 10min average of the SPY stock
         
+        Arguments:
+            None
+
+        Return:
+            average (int): Average price of SPY stock over past 10min
+        
+        Side Effects:
+            None
+        """
+
         total = sum(self.prev_10_SPY[0:9])
         return total/9
 
-    def execute_buy(self):
+    def execute_buy(self) -> None:
+        """ Buys 100$ worth of SPY stock, executed using 
+        API
         
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
+
         self.api.submit_order(symbol="SPY", notional=100.00)
         
-    def train(self, replay_memory, model, target_model, done):
+    def train(self, replay_memory, model, target_model, done) -> None:
+        """ If the replay memeory is over 1000 entries, the model 
+        retrains itself on a random subset of 128 and transfer the
+        model weihts over to the target model.
+        
+        Arguments:
+            None
+
+        Return:
+           None
+        
+        Side Effects:
+            None
+        """
+
         learning_rate = 0.7         # Learning rate
         discount_factor = 0.618     # Not sure? 
 
@@ -146,7 +223,19 @@ class LiveModel():
             Y.append(current_qs)            #
         model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
-    def execute_sell(self):
+    def execute_sell(self) -> float:
+        """ Executes selling all current holdings of SPY
+        stock using ALPACA API
+        
+        Arguments:
+            None
+
+        Return:
+            equity (float): The updated equity of the acount
+        
+        Side Effects:
+            None
+        """
 
         self.api.close_position("SPY")
         equity = float(self.api.get_account().equity)
@@ -154,11 +243,23 @@ class LiveModel():
 
         return equity
 
-    def execute_action(self, action: int):
+    def execute_action(self, action: int) -> None:
+        """ Executes the decided action from the model. If 1,
+        the model buys $100 of SPY stock. If 2, the model holds and 
+        does nothing. If 3, the model sells all current holdings of the
+        SPY stock.
+        
+        Arguments:
+            action (int): The given action from the model
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
   
         reward = 0
-
-        print("In here")
 
         if action == 1:
 
@@ -185,7 +286,22 @@ class LiveModel():
 
         return reward
 
-    def make_decision(self):
+    def make_decision(self) -> None:
+        """ Controls the enviroment given to the model for a 
+        decision. It's called once a minute and gathers the
+        past 10 min history from the SPY, VXUS, VTI and BND stocks. 
+        Then also gathers the current stocks being held, the equity,
+        how far into the week the model is and the goal profit.
+        
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
 
         curr_state = np.array(self.prev_10_SPY)
         curr_state = np.append(curr_state, self.prev_10_VTI)

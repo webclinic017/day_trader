@@ -21,7 +21,7 @@ from training_enviroment import TrainingEnviroment
 # Should give the model the list of buy prices, not just the length, not sure if it has memeory or not 
 class ModelTrainer():
 
-    def daterange(self, start_date: datetime, end_date: datetime):
+    def daterange(self, start_date: datetime, end_date: datetime) -> list:
         """ Outputs a list of dates from the given start
         to the given end
 
@@ -32,12 +32,15 @@ class ModelTrainer():
 
         Return:
             dates (list): List of all dates inbetween the start and finish
+        
+        Side Effects:
+            None
         """
 
         for n in range(int((end_date - start_date).days)):
             yield start_date + timedelta(n)
 
-    def create_rsi(self, closing_price:list):
+    def create_rsi(self, closing_price:list) -> list:
         """ Creates list of rising stock index in correlation to 
         a list of prices, not currently in use
 
@@ -46,6 +49,9 @@ class ModelTrainer():
 
         Return:
             rsi (list): List of relative stock index in correlation with the prices
+        
+        Side Effects:
+            None
         """
 
         df = pd.DataFrame()
@@ -67,7 +73,7 @@ class ModelTrainer():
 
         return rsi
 
-    def fill_df(self, df: pd.DataFrame(), ticker: str) -> list:
+    def fill_df(self, df: pd.DataFrame(), ticker: str) -> tuple[list, list]:
         """ Finds missing minutes in pandas data frame index and
         approprialtey fills those missing minutes with the general average or, if available
         the price that came before it
@@ -82,6 +88,9 @@ class ModelTrainer():
             filled_closing_prices (list): List of completed closing prices with no missing time indexes
 
             filled_volume (list): List of completed volume indicators, with no missing time indexes
+        
+        Side Effects:
+            None
         """
 
         times = list(df.index)
@@ -161,7 +170,7 @@ class ModelTrainer():
         else: 
             return [], []
 
-    def create_testing_chunks(self):
+    def create_testing_chunks(self) -> tuple[list, list]:
         """ If not already created, creates list of 3 year date range, downloades
         associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
         and applies the nessesary transformations on it.
@@ -174,6 +183,9 @@ class ModelTrainer():
             total_chunks (list): List of total segmented chunks
 
             closing_prices (list): List of actual dollar values to be associated with the chunks
+        
+        Side Effects:
+            None
         """
 
         if os.path.isfile("cache/test_data.pkl"):
@@ -232,7 +244,7 @@ class ModelTrainer():
 
         return chunks
 
-    def create_training_chunks(self):
+    def create_training_chunks(self) -> tuple[list, list]:
         """ If not already created, creates list of 3 year date range, downloades
         associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
         and applies the nessesary transformations on it.
@@ -245,6 +257,9 @@ class ModelTrainer():
             total_chunks (list): List of total segmented chunks
 
             closing_prices (list): List of actual dollar values to be associated with the chunks
+        
+        Side Effects:
+            None
         """
 
         if os.path.isfile("cache/SPY_prices.pkl"):
@@ -364,7 +379,7 @@ class ModelTrainer():
 
         return total_chunks, SPY_closing_prices
         
-    def segment_chunks(self, chunks_by_days: dict):
+    def segment_chunks(self, chunks_by_days: dict) -> list:
         """ Takes dictionary of chunks separated by the day and returns a list
         of the total chunks combined
 
@@ -375,6 +390,8 @@ class ModelTrainer():
         Return:
             total_chunks (list): List of total segmented chunks
 
+        Side Effects:
+            None
         """
 
         total_chunks = []
@@ -386,7 +403,7 @@ class ModelTrainer():
         
         return total_chunks
 
-    def get_closing_prices(self, chunks_by_days: dict):
+    def get_closing_prices(self, chunks_by_days: dict) -> list:
         """ Takes dictionary of chunks separated by the day and returns a list
         of the total closing prices
 
@@ -397,6 +414,8 @@ class ModelTrainer():
         Return:
             closing_prices (list): List of total segmented closing prices
 
+        Side Effects:
+            None
         """
 
         closing_prices = []
@@ -408,7 +427,7 @@ class ModelTrainer():
         
         return closing_prices
 
-    def make_stationary(self, prices: dict, get_close: bool = False):
+    def make_stationary(self, prices: dict, get_close: bool = False) -> tuple[list, list]:
         """ Takes list of prices and makes the data statioanry by applying
         log transformation to it. Captures orgiional list of prices if get_close
         is True
@@ -423,6 +442,9 @@ class ModelTrainer():
             chunks (list): Total prices transformed and chunked into segments of 10
 
             closing_prices (list): List of closing prices 
+        
+        Side Effects:
+            None
         """
 
         closing_prices = []
@@ -448,7 +470,7 @@ class ModelTrainer():
         else:
             return chunks
 
-    def combine_chunks(self, price_chunks: list, vol_chunks: list, price_SPY_chunks: list, vol_SPY_chunks: list):
+    def combine_chunks(self, price_chunks: list, vol_chunks: list, price_SPY_chunks: list, vol_SPY_chunks: list) -> list:
         """ Takes list of all the different segmented chunks from the four stocks, in combination
         with their segements volume chunks and combines them all into one chunk for each iteration
 
@@ -465,6 +487,9 @@ class ModelTrainer():
 
         Return:
             total_chunks (list): List of all combined chunks
+        
+        Side Effects:
+            None
         """
 
         total_chunks = []
@@ -478,7 +503,7 @@ class ModelTrainer():
         
         return total_chunks
 
-    def transform_relative(self, chunks_by_days, spy: bool = False):
+    def transform_relative(self, chunks_by_days, spy: bool = False) -> dict:
         """ Takes dictionary of chunks associated with their days 
         and transforms the price to be a percentage relative to their
         neighbour
@@ -492,6 +517,9 @@ class ModelTrainer():
         Return:
             new_chunks_by_days (dict): Dictionary of days associated with their
             relaitve prices
+        
+        Side Effects:
+            None
         """
 
         prev_price = 0
@@ -535,7 +563,7 @@ class ModelTrainer():
         else:
             return new_chunks_by_days                         
 
-    def get_closing_daily_price(self, chunks_by_days: dict):
+    def get_closing_daily_price(self, chunks_by_days: dict) -> list:
         """ Takes dictionary of chunks associated with their days 
         and gets the closing prices for each day on average
 
@@ -544,6 +572,9 @@ class ModelTrainer():
 
         Return:
             closing_prices (list): List of closing day prices
+        
+        Side Effects:
+            None
         """
 
         closing_prices = []
@@ -562,7 +593,7 @@ class ModelTrainer():
         
         return closing_prices
 
-    def create_ema(self, day_average_list: list, num_days: int):
+    def create_ema(self, day_average_list: list, num_days: int) -> list:
         """ Takes the average price by day and computes the expoential moving average
         based on the time frame given
 
@@ -573,6 +604,9 @@ class ModelTrainer():
 
         Return:
             ema_daily (list): List of ema for each given day
+        
+        Side Effects:
+            None
         """
         
         ema_daily = []
@@ -598,7 +632,7 @@ class ModelTrainer():
         
         return ema_daily
 
-    def agent(self, state_shape: int, action_shape: int):
+    def agent(self, state_shape: int, action_shape: int) -> object:
         """ Takes the current state shape and the action space shape
         to create neural network paramterized for this. Yses relu activation
         and HEUniform transformation normalizer. 36 Hidden layers all together 
@@ -616,6 +650,9 @@ class ModelTrainer():
         
         Return:
             model (keras.neural_net): Neural network by keras
+        
+        Side Effects:
+            None
         """
 
         learning_rate = 0.001       #Exploration rate
@@ -627,7 +664,7 @@ class ModelTrainer():
         model.compile(loss=tf.keras.losses.Huber(), optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), metrics=['accuracy'])
         return model
 
-    def train(self, env: TrainingEnviroment, replay_memory: deque, model: object, target_model: object, done: bool):
+    def train(self, env: TrainingEnviroment, replay_memory: deque, model: object, target_model: object, done: bool) -> None:
         """ Thes the current enviroment, replay memeory, model and target model
         to test if there is enoguh memory cached. If there is, takes a random 128 
         examples from the memory and uses that to retrain the target model 
@@ -644,6 +681,9 @@ class ModelTrainer():
             done (bool): Whether training has finished or not
         
         Return:
+            None
+        
+        Side Effects:
             None
         """
 
@@ -677,7 +717,7 @@ class ModelTrainer():
             Y.append(current_qs)            #
         model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
-    def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list):
+    def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list) -> None:
         """ Takes current enviroemnt varaibles and saves them into pickled files or uses
         Keras's built in model save function to save map of varaibles for each iterations 
         
@@ -727,7 +767,7 @@ class ModelTrainer():
             os.remove(f"Y_2_{it_num-1}.pkl")
             os.remove(f"max_profits_2_{it_num-1}.pkl")
         
-    def simulate(self, env: TrainingEnviroment):
+    def simulate(self, env: TrainingEnviroment) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -738,6 +778,9 @@ class ModelTrainer():
             env (TrainingEnviroment): The associated training enviroment with the model
         
         Return:
+            None
+        
+        Side Effects:
             None
         """
 
@@ -831,7 +874,7 @@ class ModelTrainer():
         with open("old_y.pkl", 'wb') as f:
             pickle.dump(y, f)
 
-    def test(self, env: TrainingEnviroment):
+    def test(self, env: TrainingEnviroment) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -842,6 +885,9 @@ class ModelTrainer():
             env (TrainingEnviroment): The associated training enviroment with the model
         
         Return:
+            None
+        
+        Side Effects:
             None
         """
 
@@ -911,7 +957,7 @@ class ModelTrainer():
         with open(f"action_list.pkl", 'wb') as f:
             pickle.dump(action_list, f)
 
-    def trend_analysis():
+    def trend_analysis(self) -> None:
         """ Takes the currnet data files for iterations and prices from
         hardcoded variables. Plots into line graph and plots best fit line 
         across for general trend analysis.
@@ -920,6 +966,9 @@ class ModelTrainer():
             None
         
         Return:
+            None
+        
+        Side Effects:
             None
         """
 
@@ -938,6 +987,7 @@ class ModelTrainer():
         plt.plot(X, m*X+b)
         print(f"Slop: {m}")
         plt.show()
+   
     
 def main():
 

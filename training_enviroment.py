@@ -12,7 +12,22 @@ class TrainingEnviroment:
     max_profit: int
     goal_profit: int
 
-    def __init__(self, chunks, closing_prices):
+    def __init__(self, chunks, closing_prices) -> None:
+        """ Base level initialier function for the class.
+        Takes list of chunks and closing_prices to initialize
+        the overall enviroment
+        
+        Arguments:
+            chunks (list): List of segement chunsk
+
+            closing_prices (list): List of correlated prices 
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
         
         self.chunks = chunks
         self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))
@@ -24,10 +39,35 @@ class TrainingEnviroment:
         self.goal_profit = 1005
         self.closing_prices = closing_prices
     
-    def load_year_test(self):
+    def load_year_test(self) -> None:
+        """ Sets the chunks as the last third
+        to test the previous year of data
+        
+        Arguments:
+            None
+
+        Return:
+            none
+        
+        Side Effects:
+            None
+        """
+
         self.curr_chunk = len(self.chunks) - int(len(self.chunks)/3)        # setting initial to 2/3 the way through 3 years
 
-    def reset(self):
+    def reset(self) -> None:
+        """ Function to reset all state values of the class.
+        
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
+
         self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))
         self.buy_prices = []
         self.curr_money = 1000
@@ -36,7 +76,19 @@ class TrainingEnviroment:
         self.goal_profit = 1005
         self.num_chunks = 0
 
-    def get_past_10min_avg(self):
+    def get_past_10min_avg(self) -> int:
+        """ Calculates the previous 10min of prices data from
+        the SPY stock
+        
+        Arguments:
+            None
+
+        Return:
+            average (int): The 10min average
+        
+        Side Effects:
+            None
+        """
 
         past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
         total = sum(past_10min)
@@ -44,7 +96,20 @@ class TrainingEnviroment:
 
         return avg
 
-    def get_current_money(self):
+    def get_current_money(self) -> int:
+        """ Calculates the current equity of the account
+        by theorizing how much the stocks are worth if they were sold now
+        and adding that to the cash held by the account.
+        
+        Arguments:
+            None
+
+        Return:
+            current_money (int): The current money for the model
+        
+        Side Effects:
+            None
+        """
         
         cash = self.curr_money
         hypothetical = 0
@@ -54,7 +119,21 @@ class TrainingEnviroment:
         
         return round((cash+hypothetical), 2)
   
-    def get_reward(self, current, decay):
+    def get_reward(self, current: int, decay: int) -> int:
+        """ Caclualtes the reward for selling the current stock
+
+        
+        Arguments:
+            current (int): The current price of the stock
+
+            decay (int): The current decay of the training model 
+
+        Return:
+            reward (int): The profit or loss for selling the given stock
+        
+        Side Effects:
+            None
+        """
         
         reward = 0
 
@@ -70,10 +149,23 @@ class TrainingEnviroment:
         else:
             return 0
 
-    def get_current_state(self):
+    def get_current_state(self) -> list:
+        """ Creates combined array of the current prices and
+        volumes of all stock, in combination with the price_list,
+        the current money, how far into the week the model is and
+        finally, the goal profit of the stock.
+        
+        Arguments:
+            None
+
+        Return:
+            curr_state (list): the current state of the model
+        
+        Side Effects:
+            None
+        """
         
         curr_state = np.copy(self.chunks[self.curr_chunk])
-
         buy_prices_list = list(np.log(self.buy_prices))
 
         for i in range(10-len(self.buy_prices)):
@@ -86,9 +178,23 @@ class TrainingEnviroment:
 
         return curr_state
 
+    def test_step(self, action: int, prev_chunk: list, decay: int) -> int:
+        """ Executes the decided action from the model. If 1,
+        the model buys $100 of SPY stock. If 2, the model holds and 
+        does nothing. If 3, the model sells all current holdings of the
+        SPY stock.
+        
+        Arguments:
+            action (int): The given action from the model
 
-    # maybe for each buy, segment off a new model to dictate when to sell the current position, then once we've sold the position we would have to average the model decision back into the base model?
-    def test_step(self, action, prev_chunk, decay):
+            prev_chunk (list): The list of the previous chunk
+
+        Return:
+            reward (int): The reward given for the model
+        
+        Side Effects:
+            None
+        """
        
         self.num_chunks += 1
 
@@ -150,7 +256,23 @@ class TrainingEnviroment:
         else:
             return 0, True # hit the end, ending the simulation
 
-    def step(self, action, prev_chunk, decay):
+    def step(self, action, prev_chunk, decay) -> int: 
+        """ Executes the decided action from the model. If 1,
+        the model buys $100 of SPY stock. If 2, the model holds and 
+        does nothing. If 3, the model sells all current holdings of the
+        SPY stock.
+        
+        Arguments:
+            action (int): The given action from the model
+
+            prev_chunk (list): The list of the previous chunk
+
+        Return:
+            reward (int): The current reward given for the model
+        
+        Side Effects:
+            None
+        """
         
         self.num_chunks += 1
 
@@ -213,10 +335,33 @@ class TrainingEnviroment:
             self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))          # Wrapping around to new random location
             return self.step(action, prev_chunk, decay)
             
-    def get_random_action(self):
+    def get_random_action(self) -> int:
+        """ Returns random number between [1,3], inclusive
+        
+        Arguments:
+            None
+
+        Return:
+            rand_int (int): Random int between 1 and 3
+        
+        Side Effects:
+            None
+        """
         return random.randint(1,3)
 
-    def begin(self):
+    def begin(self) -> list:
+        """ Increments the current chunk by one and returns the first chunk
+        
+        Arguments:
+            None
+
+        Return:
+            first_chunk (list): The first chunk of the list
+        
+        Side Effects:
+            None
+        """
+
         self.curr_chunk += 1
         return self.chunks[0]
 

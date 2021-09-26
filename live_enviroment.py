@@ -10,7 +10,6 @@ from datetime import date, timedelta
 from dateutil import parser
 
 
-
 class LiveEnviroment():
 
     api: tradeapi.REST
@@ -21,8 +20,20 @@ class LiveEnviroment():
 
     live_model: LiveModel
 
-
     def __init__(self) -> None:
+        """ Base level initializer for the class. 
+        Creates new API, connects to the API websocket
+        and begins running the socket connection
+        
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
 
         self.api = tradeapi.REST()
         self.auth_data = {
@@ -36,7 +47,20 @@ class LiveEnviroment():
 
         self.ws.run_forever()
 
-    def run(self, ws: websocket):
+    def run(self, ws: websocket) -> None:
+        """ Function called when websocket is initially called.
+        Sends authentification data to websocket and starts background
+        thread for action loop.
+        
+        Arguments:
+            None
+
+        Return:
+           None
+        
+        Side Effects:
+            Starts new thread running start_action_loop function
+        """
 
         ws.send(json.dumps(self.auth_data))
         listen_message = {"action": "listen", "data": {"streams": ["AM.SPY", "AM.VXUS", "AM.VTI", "AM.BND"]}}
@@ -46,37 +70,61 @@ class LiveEnviroment():
         thread = Thread(target = self.live_model.start_action_loop, args = ())
         thread.start()
 
-    def close(self):
+    def close(self) -> None:
+        """ Function called when websocket is closed.
+        
+        Arguments:
+            None
+
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
 
         print(f"Closed connection")
+        return
 
-    def update_prices(self, ws: websocket, message: dict):
+    def update_prices(self, ws: websocket, message: dict) -> None:
+        """ Function called when websocket recieves new information.
+        Based on which stock is being updated, the corresponding price 
+        data is added to the live_model's prev_10min deque. The price is 
+        also normalized using log to match training data. If SPY is all the way full,
+        then fill the rest with fill_rest function.
+        
+        Arguments:
+            None
+
+        Return:
+            ws (websocket): The calling websocket
+
+            message (dict): The dictionary json data send by the websocket
+        
+        Side Effects:
+            None
+        """
         
         message = eval(message)             # Security risk - Fix later
-        print(message)
 
         if message["stream"] == "AM.VTI":
             curr_VTI_price = round(np.log(message["data"]["c"]), 3)
             self.live_model.prev_10_VTI.append(curr_VTI_price)
-            print(curr_VTI_price)
             
         
         elif message["stream"] == "AM.VXUS":
             curr_VXUS_price = round(np.log(message["data"]["c"]), 3)
             self.live_model.prev_10_VXUS.append(curr_VXUS_price)
-            print(curr_VXUS_price)
             
         
         elif message["stream"] == "AM.BND":
             curr_BND_price = round(np.log(message["data"]["c"]), 3)
             self.live_model.prev_10_BND.append(curr_BND_price)
-            print(curr_BND_price)
             
         
         elif message["stream"] == "AM.SPY":
             curr_SPY_price = round(np.log(message["data"]["c"]), 3)
             self.live_model.prev_10_SPY.append(curr_SPY_price)
-            print(curr_SPY_price)
 
             if (len(self.live_model.prev_10_SPY) == 10 and len(self.live_model.prev_10_VXUS) > 0
                 and len(self.live_model.prev_10_BND) > 0 and len(self.live_model.prev_10_VTI) > 0):
