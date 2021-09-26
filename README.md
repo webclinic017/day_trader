@@ -22,18 +22,18 @@ Please refrence Road Map for the current development and status of the project.
 # Installation
  Firstly, you must install all required dependencies. To do this, please run:
 
- ```
- pip3 -r requirments.txt
- ```
+ 
+    pip3 -r requirments.txt
+ 
 
 Secondly, you must set your enviromental variables for access to the ALPACA api. To do this, simply run
 the following commands: 
 
-```
-export APCA_API_KEY_ID="<YOUR_KEY_HERE>"
 
-export APCA_API_SECRET_KEY="<YOUR_SECRET_KEY_HERE>"
-```
+    export APCA_API_KEY_ID="<YOUR_KEY_HERE>"
+
+    export APCA_API_SECRET_KEY="<YOUR_SECRET_KEY_HERE>"
+
 
 As this is initially for a grad project, here are my personal keys to save whoever is grading this 
 from having to create their own account: 
@@ -56,9 +56,9 @@ Model Training:
     
 To train your model simply run:
 
-    ```
+    
     python3 model_trainer.py
-    ```
+    
 
 This will currently run for 1000 train cycles. Each training cycle is of abitrary length due to the reasons
 outlined in the description. I've found it usually takes 36-48h to fully run on my macbook pro with 32gb of ram 
@@ -76,9 +76,9 @@ Live Model Trading:
 
 To live trade with the model, simply run:
 
-    ```
+    
     python3 live_enviroment.py
-    ```
+    
 
 This will start a continually running script that will pull data from the ALPACA websocket api and make live trades
 in real time using my paper trading account. The model will output the data being recieved each minute and the correspodning 
