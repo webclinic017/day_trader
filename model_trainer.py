@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from dateutil import parser
 from training_enviroment import TrainingEnviroment
 
-# Should give the model the list of buy prices, not just the length, not sure if it has memeory or not 
+
 class ModelTrainer():
 
     def daterange(self, start_date: datetime, end_date: datetime) -> list:
@@ -743,29 +743,29 @@ class ModelTrainer():
             Files created for all varaibles and files deleted for all varaibles
         """
 
-        model.save(f"model_2_{it_num}")
+        model.save(f"cache/model_2_{it_num}")
 
-        target_model.save(f"target_model_2_{it_num}")
+        target_model.save(f"cache/target_model_2_{it_num}")
 
-        with open(f"replay_mem_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/replay_mem_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
         
-        with open(f"X_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/X_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(X, f)
         
-        with open(f"Y_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/Y_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(Y, f)
         
-        with open(f"max_profits_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/max_profits_2_{it_num}.pkl", 'wb') as f:
             pickle.dump(max_profits, f)
         
         if it_num != 0:
-            shutil.rmtree(f"model_2_{it_num-1}")
-            shutil.rmtree(f"target_model_2_{it_num-1}")
-            os.remove(f"replay_mem_2_{it_num-1}.pkl")
-            os.remove(f"X_2_{it_num-1}.pkl")
-            os.remove(f"Y_2_{it_num-1}.pkl")
-            os.remove(f"max_profits_2_{it_num-1}.pkl")
+            shutil.rmtree(f"cache/model_2_{it_num-1}")
+            shutil.rmtree(f"cache/target_model_2_{it_num-1}")
+            os.remove(f"cache/replay_mem_2_{it_num-1}.pkl")
+            os.remove(f"cache/X_2_{it_num-1}.pkl")
+            os.remove(f"cache/Y_2_{it_num-1}.pkl")
+            os.remove(f"cache/max_profits_2_{it_num-1}.pkl")
         
     def simulate(self, env: TrainingEnviroment) -> None:
         """ Overal model controller for the model and the training enviroments. 
@@ -987,8 +987,8 @@ class ModelTrainer():
         plt.plot(X, m*X+b)
         print(f"Slop: {m}")
         plt.show()
-   
-    
+
+
 def main():
 
     trainer_model = ModelTrainer()

@@ -42,13 +42,13 @@ class LiveModel():
 
     STOP_SIG: bool = False
 
-    def __init__(self) -> None:
+    def __init__(self, it: int) -> None:
         """ Base initializer function. Creates new ALPACA trading API,
         initializes the prev_10 containers as deque's as length of 10, 
         loads in previous models and sets montetary trackers and goals.
 
         Arguments:
-            None
+            it (int): The iteration number of the model to load
 
         Return:
             None
@@ -64,8 +64,8 @@ class LiveModel():
         self.prev_10_VTI = deque(maxlen=10)
         self.prev_10_VXUS = deque(maxlen=10)
 
-        self.model = keras.models.load_model(f"cache/model_1_{850}")
-        self.target_model = keras.models.load_model(f"cache/target_model_1_{850}")
+        self.model = keras.models.load_model(f"cache/(LIVE)model_1_{it}")
+        self.target_model = keras.models.load_model(f"cache/(LIVE)target_model_1_{it}")
         
         with open(f"cache/replay_mem_1_{850}.pkl", 'rb') as f:
             self.replay_memory = pickle.load(f)
