@@ -1,4 +1,7 @@
-# DEEP Q-VALUE REINFORCEMENT MODEL FOR DAY TRADING
+# DEEP Q-VALUE REINFORCEMENT DAY TRADING
+
+# Introduction
+
 
 # Installation
  Firstly, you must install all required dependencies. To do this, please run:
@@ -73,3 +76,11 @@ The script will do nothing when the market is not open, as it not recieving any 
 Finally, please note that the model trainer and live model are sometimes disconnected. I am continual development and testing
 of the model trainer. This may include trying new inputs or restructing the model architecture itself. To use the model in a live enviroment, the underlying architecture needs to match the model input space needs. As it would be poor development practices to continually change the live model trader when I am still developing the model itself, it is likley that you can not use the model you trained in the live model trainer as it will be mutliple iterations head. Thus, please use the prived model_850 for live model trading use. 
 
+
+# Road Map
+
+# Contributing
+
+# Project Status
+
+# License
