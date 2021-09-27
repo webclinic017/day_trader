@@ -858,6 +858,18 @@ class ModelTrainer():
         
         Arguments:
             env (TrainingEnviroment): The associated training enviroment with the model
+
+            iteration (int): Current iteration number
+
+            model_name (str): Name of the model folder
+
+            target_model_name (str): Name of the target model folder
+
+            replay_mem_name (str): Name of the replay memory file
+
+            epsilon (int): The current value of epsilon
+
+            decay (int): The value of the decay rate
         
         Return:
             None
@@ -946,6 +958,12 @@ class ModelTrainer():
         
         Arguments:
             env (TrainingEnviroment): The associated training enviroment with the model
+
+            model_name (str): Name of the model folder
+
+            target_model_name (str): Name of the target model folder
+
+            replay_mem_name (str): Name of replay memory file
         
         Return:
             None
@@ -1026,7 +1044,9 @@ class ModelTrainer():
         across for general trend analysis.
         
         Arguments:
-            None
+            X_name (str): Name of X file
+
+            Y_name (str): Name of Y file
         
         Return:
             None
