@@ -868,7 +868,7 @@ class ModelTrainer():
 
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
         min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-        episode = 0
+        episode = iteration
         total_segment_reward = 0
 
         X = []
@@ -937,7 +937,7 @@ class ModelTrainer():
 
             self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
 
-    def test(self, env: TrainingEnviroment) -> None:
+    def test(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -967,9 +967,9 @@ class ModelTrainer():
         iteration = []
         action_list = []
 
-        model = keras.models.load_model(f"cache/model_1_{850}")
-        target_model = keras.models.load_model(f"cache/target_model_1_{850}") # Making neural net with input layer equal to state space size, and output layer equal to action space size
-        with open(f"cache/replay_mem_1_{850}.pkl", 'rb') as f:
+        model = keras.models.load_model(model_name)
+        target_model = keras.models.load_model(target_model_name) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+        with open(replay_mem_name, 'rb') as f:
             replay_memory = pickle.load(f)
         
         i = 0
@@ -1057,6 +1057,7 @@ def main():
     if not os.path.exists('cache'):
         os.makedirs('cache')
 
+    choice = input("1) Train from base level \n 2) Train from saved state \n 3) Test model")
     trainer_model = ModelTrainer()
     chunks, closing_prices = trainer_model.create_training_chunks()
     env = TrainingEnviroment(chunks, closing_prices)
