@@ -352,15 +352,6 @@ class ModelTrainer():
             with open("cache/BND_vol.pkl", 'wb') as f:
                 pickle.dump(BND_vol, f)
 
-        print(len(SPY_prices))
-        print(len(VTI_prices))
-        print(len(VXUS_prices))
-        print(len(BND_prices))
-
-        print(len(SPY_vol))
-        print(len(VTI_vol))
-        print(len(VXUS_vol))
-        print(len(BND_vol))
 
         SPY_prices, SPY_closing_prices = self.make_stationary(SPY_prices, True)
         VTI_prices = self.make_stationary(VTI_prices)
@@ -858,21 +849,93 @@ class ModelTrainer():
 
             self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
             
+    def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: int, decay: int):
+        """ Overal model controller for the model and the training enviroments. 
+        Controls the flow of inforamtion and helps simulate realtime data extraction
+        for the model to learn on. Gives the model the current states, exectutes the action,
+        updates the state and trains the model if nesseary. Also controls tracking of all
+        relevant meta-data around training process.
+        
+        Arguments:
+            env (TrainingEnviroment): The associated training enviroment with the model
+        
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
 
-        X, Y = np.array(X).reshape(-1,1), np.array(y).reshape(-1,1)
-        plt.plot(X, y)  # Plot the chart
-        plt.xlabel("Iteration Number")
-        plt.ylabel("Number of decisions made")
-        plt.show()
-        plt.plot( X, LinearRegression().fit(X, Y).predict(X))
-        plt.show()
+        max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
+        min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
+        episode = 0
+        total_segment_reward = 0
+
+        X = []
+        y = []
+        max_profits = []
+
+        model = keras.models.load_model(model_name)
+        target_model = keras.models.load_model(target_model_name)
+        with open(replay_mem_name, 'rb') as f:
+            replay_memory = pickle.load(f)
 
 
-        with open("old_x.pkl", 'wb') as f:
-            pickle.dump(X, f)
 
-        with open("old_y.pkl", 'wb') as f:
-            pickle.dump(y, f)
+        for i in tqdm(range(1000 - iteration)):
+
+            done = False
+            steps_to_update_target_model = 0
+            env.reset()
+
+            while(not done):
+
+                total_segment_reward += 1
+                steps_to_update_target_model += 1 
+                random_number = np.random.rand()
+                current_state = env.get_current_state()
+
+                if random_number <= epsilon:  # Explore  
+                    action = env.get_random_action() # Just randomly choosing an action
+                
+                else: #Exploitting
+                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                    action = np.argmax(predicted) 
+                
+                reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+                
+                new_state = current_state               
+                new_state[-2] = env.num_chunks
+                new_state[-3] = env.curr_money
+                
+                index = -4
+                for k in range(9,-1,-1):
+
+                    try:
+                        new_state[index] = np.log(env.buy_prices[k])
+                    except:
+                        new_state[index] = 0
+                    index -= 1
+
+                replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
+
+                # 3. Update the Main Network using the Bellman Equation
+                if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+                    self.train(env, replay_memory, model, target_model, done)            # training the main model
+                    
+            
+            episode += 1
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+            target_model.set_weights(model.get_weights())
+
+            print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
+            X.append(len(X) + 1)
+            max_profits.append(env.max_profit)
+            y.append(env.get_current_money())
+            total_segment_reward = 0
+
+            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
 
     def test(self, env: TrainingEnviroment) -> None:
         """ Overal model controller for the model and the training enviroments. 
