@@ -1,0 +1,9 @@
+tensorflow
+numpy
+alpaca_trade_api
+matplotlib
+pickle-mixin
+tqdm
+pandas
+sklearn
+websocket
