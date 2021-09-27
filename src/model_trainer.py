@@ -1020,7 +1020,7 @@ class ModelTrainer():
         with open(f"action_list.pkl", 'wb') as f:
             pickle.dump(action_list, f)
 
-    def trend_analysis(self) -> None:
+    def trend_analysis(self, X_name: str, Y_name: str) -> None:
         """ Takes the currnet data files for iterations and prices from
         hardcoded variables. Plots into line graph and plots best fit line 
         across for general trend analysis.
@@ -1035,10 +1035,10 @@ class ModelTrainer():
             None
         """
 
-        with open("iteration.pkl", 'rb') as f:
+        with open(X_name, 'rb') as f:
             X = np.array(pickle.load(f))
         
-        with open("SPY_prices.pkl", 'rb') as f:
+        with open(Y_name, 'rb') as f:
             Y = np.array(pickle.load(f))
 
 
@@ -1057,11 +1057,48 @@ def main():
     if not os.path.exists('cache'):
         os.makedirs('cache')
 
-    choice = input("1) Train from base level \n 2) Train from saved state \n 3) Test model")
-    trainer_model = ModelTrainer()
-    chunks, closing_prices = trainer_model.create_training_chunks()
-    env = TrainingEnviroment(chunks, closing_prices)
-    trainer_model.simulate(env)
+    choice = input("1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis")
+
+    if choice == 1:
+        trainer_model = ModelTrainer()
+        chunks, closing_prices = trainer_model.create_training_chunks()
+        env = TrainingEnviroment(chunks, closing_prices)
+        trainer_model.simulate(env)
+    
+    elif choice == 2:
+
+        model_name = input("    Please enter the model name \n")
+        target_model_name = input("    Please enter the target model name \n")
+        replay_mem_name = input("    Please enter the replay memory name \n")
+        iteration = int(input("    Please enter the iteration number \n"))
+        epsilon = int(input("    Please enter the epsilon number \n"))
+        decay = int(input("    Please enter the decay number \n"))
+
+        trainer_model = ModelTrainer()
+        chunks, closing_prices = trainer_model.create_training_chunks()
+        env = TrainingEnviroment(chunks, closing_prices)
+        trainer_model.train_from_save(env, iteration, model_name, target_model_name, replay_mem_name, epsilon, decay)
+    
+    elif choice == 3:
+
+        model_name = input("    Please enter the model name \n")
+        target_model_name = input("    Please enter the target model name \n")
+        replay_mem_name = input("    Please enter the replay memory name \n")
+
+        trainer_model = ModelTrainer()
+        chunks, closing_prices = trainer_model.create_training_chunks()
+        env = TrainingEnviroment(chunks, closing_prices)
+        trainer_model.test(env, model_name, target_model_name, replay_mem_name)
+    
+    elif choice == 4:
+
+        X = input("     Please enter the X file name \n")
+        Y = input("     Please enter the Y file name \n")
+
+        trainer_model = ModelTrainer()
+        trainer_model.trend_analysis(X,Y)
+
+
 
     #chunks, closing_prices = create_training_chunks()
     #env = Enviroment(chunks, closing_prices)
