@@ -708,7 +708,7 @@ class ModelTrainer():
             Y.append(current_qs)            #
         model.fit(np.array(X), np.array(Y), batch_size=batch_size, verbose=0, shuffle=True)             # Fitting the model to the new input
 
-    def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list) -> None:
+    def save_state(self, model: object, target_model: object, it_num: int, replay_mem: deque, X: list, Y: list, max_profits: list, ver: int) -> None:
         """ Takes current enviroemnt varaibles and saves them into pickled files or uses
         Keras's built in model save function to save map of varaibles for each iterations 
         
@@ -734,29 +734,29 @@ class ModelTrainer():
             Files created for all varaibles and files deleted for all varaibles
         """
 
-        model.save(f"cache/model_2_{it_num}")
+        model.save(f"cache/model_{ver}_{it_num}")
 
         target_model.save(f"cache/target_model_2_{it_num}")
 
-        with open(f"cache/replay_mem_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
         
-        with open(f"cache/X_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/X_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(X, f)
         
-        with open(f"cache/Y_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/Y_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(Y, f)
         
-        with open(f"cache/max_profits_2_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(max_profits, f)
         
         if it_num != 0:
-            shutil.rmtree(f"cache/model_2_{it_num-1}")
-            shutil.rmtree(f"cache/target_model_2_{it_num-1}")
-            os.remove(f"cache/replay_mem_2_{it_num-1}.pkl")
-            os.remove(f"cache/X_2_{it_num-1}.pkl")
-            os.remove(f"cache/Y_2_{it_num-1}.pkl")
-            os.remove(f"cache/max_profits_2_{it_num-1}.pkl")
+            shutil.rmtree(f"cache/model_{ver}_{it_num-1}")
+            shutil.rmtree(f"cache/target_model_{ver}_{it_num-1}")
+            os.remove(f"cache/replay_mem_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/X_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/Y_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/max_profits_{ver}_{it_num-1}.pkl")
         
     def simulate(self, env: TrainingEnviroment) -> None:
         """ Overal model controller for the model and the training enviroments. 
@@ -832,7 +832,7 @@ class ModelTrainer():
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
-                # 3. Update the Main Network using the Bellman Equation
+                # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
                 if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                     self.train(env, replay_memory, model, target_model, done)            # training the main model
                     
@@ -847,9 +847,9 @@ class ModelTrainer():
             y.append(env.get_current_money())
             total_segment_reward = 0
 
-            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
+            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits, 0)
             
-    def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: int, decay: int):
+    def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int):
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -947,7 +947,7 @@ class ModelTrainer():
             y.append(env.get_current_money())
             total_segment_reward = 0
 
-            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits)
+            self.save_state(model, target_model, episode, replay_memory, X, y, max_profits, ver)
 
     def test(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str) -> None:
         """ Overal model controller for the model and the training enviroments. 
@@ -1077,7 +1077,7 @@ def main():
     if not os.path.exists('cache'):
         os.makedirs('cache')
 
-    choice = input("1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis")
+    choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
 
     if choice == 1:
         trainer_model = ModelTrainer()
@@ -1091,13 +1091,14 @@ def main():
         target_model_name = input("    Please enter the target model name \n")
         replay_mem_name = input("    Please enter the replay memory name \n")
         iteration = int(input("    Please enter the iteration number \n"))
-        epsilon = int(input("    Please enter the epsilon number \n"))
-        decay = int(input("    Please enter the decay number \n"))
+        epsilon = float(input("    Please enter the epsilon number \n"))
+        decay = float(input("    Please enter the decay number \n"))
+        ver = int(input("    Please enter the version number \n"))
 
         trainer_model = ModelTrainer()
         chunks, closing_prices = trainer_model.create_training_chunks()
         env = TrainingEnviroment(chunks, closing_prices)
-        trainer_model.train_from_save(env, iteration, model_name, target_model_name, replay_mem_name, epsilon, decay)
+        trainer_model.train_from_save(env, iteration, model_name, target_model_name, replay_mem_name, epsilon, decay, ver)
     
     elif choice == 3:
 
