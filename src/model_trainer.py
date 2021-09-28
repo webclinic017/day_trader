@@ -920,7 +920,7 @@ class ModelTrainer():
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
                 new_state[-3] = env.curr_money
-                
+                print("example edit")
                 index = -4
                 for k in range(9,-1,-1):
 
