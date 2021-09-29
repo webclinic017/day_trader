@@ -1,0 +1,154 @@
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+2021-09-24 11:01:25.925267: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  0%|          | 0/10000 [00:00<?, ?it/s]2021-09-24 11:01:26.092512: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+Made it to $999.7 - Max Money: 1000.19 -  it number: 0 - epsilon: 0.9990104948350412
+2021-09-24 11:01:40.961413: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
+  0%|          | 1/10000 [00:15<43:27:54, 15.65s/it]Made it to $1000.6 - Max Money: 1000.64 -  it number: 1 - epsilon: 0.9980219786806598
+  0%|          | 2/10000 [00:50<74:17:46, 26.75s/it]Made it to $999.5 - Max Money: 1000.03 -  it number: 2 - epsilon: 0.9970344505483393
+  0%|          | 3/10000 [01:25<85:00:48, 30.61s/it]Made it to $1000.3 - Max Money: 1000.64 -  it number: 3 - epsilon: 0.9960479094505515
+  0%|          | 4/10000 [02:00<90:24:03, 32.56s/it]Made it to $999.8 - Max Money: 1000.07 -  it number: 4 - epsilon: 0.9950623544007555
+  0%|          | 5/10000 [02:36<93:05:37, 33.53s/it]Made it to $1000.46 - Max Money: 1000.59 -  it number: 5 - epsilon: 0.9940777844133959
+  0%|          | 6/10000 [03:11<94:29:42, 34.04s/it]Made it to $1000.3 - Max Money: 1000.4 -  it number: 6 - epsilon: 0.9930941985039028
+  0%|          | 7/10000 [03:46<95:27:05, 34.39s/it]Made it to $1000.1 - Max Money: 1000.83 -  it number: 7 - epsilon: 0.99211159568869
+  0%|          | 8/10000 [04:21<96:21:54, 34.72s/it]Made it to $999.6 - Max Money: 1000.57 -  it number: 8 - epsilon: 0.9911299749851548
+  0%|          | 9/10000 [04:58<97:56:42, 35.29s/it]Made it to $999.0 - Max Money: 1000.44 -  it number: 9 - epsilon: 0.9901493354116764
+  0%|          | 10/10000 [05:33<98:13:48, 35.40s/it]Made it to $999.8 - Max Money: 1000.55 -  it number: 10 - epsilon: 0.9891696759876151
+  0%|          | 11/10000 [06:09<98:29:31, 35.50s/it]Made it to $1000.9 - Max Money: 1000.9 -  it number: 11 - epsilon: 0.9881909957333113
+  0%|          | 12/10000 [06:45<98:37:14, 35.55s/it]Made it to $999.2 - Max Money: 1000.04 -  it number: 12 - epsilon: 0.9872132936700847
+  0%|          | 13/10000 [07:20<98:35:41, 35.54s/it]Made it to $1000.14 - Max Money: 1000.32 -  it number: 13 - epsilon: 0.9862365688202333
+  0%|          | 14/10000 [07:56<98:49:46, 35.63s/it]Made it to $1003.5 - Max Money: 1004.44 -  it number: 14 - epsilon: 0.985260820207032
+  0%|          | 15/10000 [08:32<99:14:36, 35.78s/it]Made it to $1001.0 - Max Money: 1001.1 -  it number: 15 - epsilon: 0.9842860468547323
+  0%|          | 16/10000 [09:09<99:35:12, 35.91s/it]Made it to $1001.0 - Max Money: 1001.02 -  it number: 16 - epsilon: 0.9833122477885605
+  0%|          | 17/10000 [09:47<101:34:28, 36.63s/it]/usr/local/Cellar/python@3.9/3.9.6/Frameworks/Python.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+2021-09-24 11:44:53.757410: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  0%|          | 0/10000 [00:00<?, ?it/s]2021-09-24 11:44:53.880063: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+Made it to $1001.6 - Max Money: 1001.6 -  it number: 0 - epsilon: 0.9990104948350412
+2021-09-24 11:45:05.238174: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
+  0%|          | 1/10000 [00:12<33:22:01, 12.01s/it]Made it to $1000.4 - Max Money: 1000.43 -  it number: 0 - epsilon: 0.9980219786806598
+  0%|          | 2/10000 [00:39<58:55:13, 21.22s/it]Made it to $1000.6 - Max Money: 1000.65 -  it number: 0 - epsilon: 0.9970344505483393
+  0%|          | 3/10000 [01:07<67:21:26, 24.26s/it]Made it to $999.4 - Max Money: 1000.2 -  it number: 0 - epsilon: 0.9960479094505515
+  0%|          | 4/10000 [01:36<72:23:01, 26.07s/it]/usr/local/Cellar/python@3.9/3.9.6/Frameworks/Python.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+250236
+2021-09-24 11:47:28.272839: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  0%|          | 0/10000 [00:00<?, ?it/s]2021-09-24 11:47:28.402330: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+Made it to $999.13 - Max Money: 1001.22 -  it number: 0 - epsilon: 0.9990104948350412
+2021-09-24 11:47:40.578482: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
+  0%|          | 1/10000 [00:12<35:42:45, 12.86s/it]Made it to $999.5 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9980219786806598
+  0%|          | 2/10000 [00:42<62:31:00, 22.51s/it]Made it to $999.4 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9970344505483393
+  0%|          | 3/10000 [01:10<69:23:17, 24.99s/it]Made it to $999.6 - Max Money: 1000.13 -  it number: 0 - epsilon: 0.9960479094505515
+  0%|          | 4/10000 [01:38<72:44:15, 26.20s/it]Made it to $1001.1 - Max Money: 1001.14 -  it number: 0 - epsilon: 0.9950623544007555
+  0%|          | 5/10000 [02:06<75:03:16, 27.03s/it]Made it to $999.9 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9940777844133959
+  0%|          | 6/10000 [02:34<76:07:50, 27.42s/it]Made it to $1000.5 - Max Money: 1000.64 -  it number: 0 - epsilon: 0.9930941985039028
+  0%|          | 7/10000 [03:03<76:49:23, 27.68s/it]Made it to $999.8 - Max Money: 1000.35 -  it number: 0 - epsilon: 0.99211159568869
+  0%|          | 8/10000 [03:31<77:14:57, 27.83s/it]Made it to $1000.7 - Max Money: 1001.34 -  it number: 0 - epsilon: 0.9911299749851548
+  0%|          | 9/10000 [04:00<78:35:29, 28.32s/it]Made it to $1000.1 - Max Money: 1000.44 -  it number: 0 - epsilon: 0.9901493354116764
+  0%|          | 10/10000 [04:29<78:52:54, 28.43s/it]Made it to $1001.3 - Max Money: 1001.3 -  it number: 0 - epsilon: 0.9891696759876151
+  0%|          | 11/10000 [04:57<78:56:31, 28.45s/it]Made it to $1000.1 - Max Money: 1000.22 -  it number: 0 - epsilon: 0.9881909957333113
+  0%|          | 12/10000 [05:26<79:22:09, 28.61s/it]Made it to $999.9 - Max Money: 1000.07 -  it number: 0 - epsilon: 0.9872132936700847
+  0%|          | 13/10000 [05:55<79:21:13, 28.60s/it]Made it to $1001.9 - Max Money: 1001.93 -  it number: 0 - epsilon: 0.9862365688202333
+  0%|          | 14/10000 [06:23<79:24:06, 28.62s/it]Made it to $997.7 - Max Money: 1000.23 -  it number: 0 - epsilon: 0.985260820207032
+  0%|          | 15/10000 [06:52<79:30:30, 28.67s/it]Made it to $1000.23 - Max Money: 1000.25 -  it number: 0 - epsilon: 0.9842860468547323
+  0%|          | 16/10000 [07:21<79:49:22, 28.78s/it]Made it to $999.3 - Max Money: 1000.05 -  it number: 0 - epsilon: 0.9833122477885605
+  0%|          | 17/10000 [07:50<79:56:22, 28.83s/it]Made it to $1000.0 - Max Money: 1000.35 -  it number: 0 - epsilon: 0.9823394220347178
+  0%|          | 18/10000 [08:19<80:02:06, 28.86s/it]Made it to $1001.0 - Max Money: 1001.02 -  it number: 0 - epsilon: 0.9813675686203779
+  0%|          | 19/10000 [08:48<80:20:16, 28.98s/it]Made it to $999.3 - Max Money: 1000.13 -  it number: 0 - epsilon: 0.9803966865736877
+  0%|          | 20/10000 [09:17<80:22:00, 28.99s/it]Made it to $1000.3 - Max Money: 1000.34 -  it number: 0 - epsilon: 0.979426774923765
+  0%|          | 21/10000 [09:47<80:58:24, 29.21s/it]Made it to $1000.8 - Max Money: 1001.41 -  it number: 0 - epsilon: 0.978457832700698
+  0%|          | 22/10000 [10:17<81:06:18, 29.26s/it]Made it to $1000.27 - Max Money: 1000.3 -  it number: 0 - epsilon: 0.9774898589355443
+  0%|          | 23/10000 [10:46<81:12:46, 29.30s/it]Made it to $1000.2 - Max Money: 1000.44 -  it number: 0 - epsilon: 0.9765228526603302
+  0%|          | 24/10000 [11:16<82:13:32, 29.67s/it]Made it to $1000.5 - Max Money: 1000.6 -  it number: 0 - epsilon: 0.9755568129080493
+  0%|          | 25/10000 [11:47<82:31:41, 29.78s/it]Made it to $996.57 - Max Money: 1000.4 -  it number: 0 - epsilon: 0.9745917387126619
+  0%|          | 26/10000 [12:17<82:58:39, 29.95s/it]Made it to $1000.1 - Max Money: 1000.2 -  it number: 0 - epsilon: 0.9736276291090934
+  0%|          | 27/10000 [12:47<82:57:27, 29.95s/it]Made it to $1000.1 - Max Money: 1000.29 -  it number: 0 - epsilon: 0.9726644831332344
+  0%|          | 28/10000 [13:17<82:56:09, 29.94s/it]Made it to $999.1 - Max Money: 1000 -  it number: 0 - epsilon: 0.9717022998219388
+  0%|          | 29/10000 [13:47<83:03:00, 29.98s/it]Made it to $1000.4 - Max Money: 1000.42 -  it number: 0 - epsilon: 0.970741078213023
+  0%|          | 30/10000 [14:17<82:55:17, 29.94s/it]Made it to $1000.0 - Max Money: 1000.12 -  it number: 0 - epsilon: 0.9697808173452657
+  0%|          | 31/10000 [14:47<83:12:55, 30.05s/it]Made it to $1000.08 - Max Money: 1000.14 -  it number: 0 - epsilon: 0.9688215162584056
+  0%|          | 32/10000 [15:17<83:17:58, 30.08s/it]Made it to $1000.4 - Max Money: 1000.43 -  it number: 0 - epsilon: 0.9678631739931417
+  0%|          | 33/10000 [15:47<83:05:46, 30.01s/it]Made it to $1004.43 - Max Money: 1004.43 -  it number: 0 - epsilon: 0.9669057895911316
+  0%|          | 34/10000 [16:18<83:31:43, 30.17s/it]Made it to $1000.1 - Max Money: 1000.32 -  it number: 0 - epsilon: 0.9659493620949908
+  0%|          | 35/10000 [16:49<84:25:16, 30.50s/it]Made it to $1000.4 - Max Money: 1000.54 -  it number: 0 - epsilon: 0.9649938905482919
+  0%|          | 36/10000 [17:20<84:42:46, 30.61s/it]Made it to $999.78 - Max Money: 1000.2 -  it number: 0 - epsilon: 0.9640393739955629
+  0%|          | 37/10000 [17:50<84:49:42, 30.65s/it]Made it to $998.8 - Max Money: 1000.13 -  it number: 0 - epsilon: 0.9630858114822876
+  0%|          | 38/10000 [18:21<84:52:59, 30.67s/it]Made it to $999.9 - Max Money: 1000.35 -  it number: 0 - epsilon: 0.962133202054903
+  0%|          | 39/10000 [18:52<84:51:51, 30.67s/it]Made it to $1000.0 - Max Money: 1000.64 -  it number: 0 - epsilon: 0.9611815447608
+  0%|          | 40/10000 [19:23<85:13:40, 30.81s/it]Made it to $1000.3 - Max Money: 1000.3 -  it number: 0 - epsilon: 0.9602308386483209
+  0%|          | 41/10000 [19:54<85:35:35, 30.94s/it]Made it to $1000.4 - Max Money: 1000.4 -  it number: 0 - epsilon: 0.9592810827667597
+  0%|          | 42/10000 [20:25<85:34:40, 30.94s/it]Made it to $1000.25 - Max Money: 1000.3 -  it number: 0 - epsilon: 0.9583322761663603
+  0%|          | 43/10000 [20:55<84:48:24, 30.66s/it]Made it to $999.7 - Max Money: 1000.44 -  it number: 0 - epsilon: 0.9573844178983162
+  0%|          | 44/10000 [21:25<83:46:53, 30.29s/it]Made it to $1000.2 - Max Money: 1000.32 -  it number: 0 - epsilon: 0.9564375070147689
+  0%|          | 45/10000 [21:55<83:34:40, 30.22s/it]Made it to $1000.8 - Max Money: 1000.84 -  it number: 0 - epsilon: 0.9554915425688075
+  0%|          | 46/10000 [22:24<83:04:35, 30.05s/it]Made it to $1000.4 - Max Money: 1000.89 -  it number: 0 - epsilon: 0.9545465236144673
+  0%|          | 47/10000 [22:56<84:47:35, 30.67s/it]Made it to $999.0 - Max Money: 1000.12 -  it number: 0 - epsilon: 0.9536024492067297
+  0%|          | 48/10000 [23:29<86:26:56, 31.27s/it]Made it to $1000.6 - Max Money: 1000.62 -  it number: 0 - epsilon: 0.9526593184015199
+  0%|          | 49/10000 [24:08<92:47:41, 33.57s/it]Made it to $1000.2 - Max Money: 1000.22 -  it number: 0 - epsilon: 0.9517171302557069
+  0%|          | 50/10000 [24:49<99:16:08, 35.92s/it]Made it to $1000.9 - Max Money: 1000.94 -  it number: 0 - epsilon: 0.9507758838271028
+  1%|          | 51/10000 [25:30<102:56:37, 37.25s/it]Made it to $1000.12 - Max Money: 1000.2 -  it number: 0 - epsilon: 0.9498355781744606
+  1%|          | 52/10000 [26:09<104:46:18, 37.92s/it]Made it to $999.02 - Max Money: 1000.13 -  it number: 0 - epsilon: 0.9488962123574752
+  1%|          | 53/10000 [26:49<106:20:16, 38.49s/it]Made it to $1000.8 - Max Money: 1001.65 -  it number: 0 - epsilon: 0.9479577854367803
+  1%|          | 54/10000 [27:30<108:02:07, 39.10s/it]Made it to $1000.0 - Max Money: 1000.42 -  it number: 0 - epsilon: 0.947020296473949
+  1%|          | 55/10000 [28:10<109:23:15, 39.60s/it]Made it to $1000.0 - Max Money: 1000.13 -  it number: 0 - epsilon: 0.9460837445314924
+  1%|          | 56/10000 [28:52<111:31:42, 40.38s/it]Made it to $1000.0 - Max Money: 1001.4 -  it number: 0 - epsilon: 0.9451481286728581
+  1%|          | 57/10000 [29:39<116:19:33, 42.12s/it]Made it to $999.8 - Max Money: 1000.15 -  it number: 0 - epsilon: 0.9442134479624306
+  1%|          | 58/10000 [30:20<115:43:56, 41.91s/it]Made it to $1000.3 - Max Money: 1000.62 -  it number: 0 - epsilon: 0.9432797014655288
+  1%|          | 59/10000 [30:52<107:42:37, 39.01s/it]Made it to $1002.0 - Max Money: 1002.5 -  it number: 0 - epsilon: 0.9423468882484062
+  1%|          | 60/10000 [31:25<102:17:23, 37.05s/it]Made it to $999.7 - Max Money: 1000.03 -  it number: 0 - epsilon: 0.9414150073782496
+  1%|          | 61/10000 [31:57<98:18:30, 35.61s/it] Made it to $999.98 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.940484057923178
+  1%|          | 62/10000 [32:33<98:17:16, 35.60s/it]Made it to $999.8 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9395540389522419
+  1%|          | 63/10000 [33:15<103:56:32, 37.66s/it]Made it to $999.9 - Max Money: 1000.04 -  it number: 0 - epsilon: 0.9386249495354222
+  1%|          | 64/10000 [33:57<107:26:34, 38.93s/it]Made it to $1000.4 - Max Money: 1000.52 -  it number: 0 - epsilon: 0.9376967887436294
+  1%|          | 65/10000 [34:38<109:04:57, 39.53s/it]Made it to $1002.1 - Max Money: 1002.24 -  it number: 0 - epsilon: 0.9367695556487027
+  1%|          | 66/10000 [35:19<110:35:27, 40.08s/it]Made it to $999.52 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9358432493234088
+  1%|          | 67/10000 [36:01<111:43:07, 40.49s/it]Made it to $998.9 - Max Money: 1000.04 -  it number: 0 - epsilon: 0.9349178688414413
+  1%|          | 68/10000 [36:43<112:47:59, 40.89s/it]Made it to $1000.8 - Max Money: 1000.86 -  it number: 0 - epsilon: 0.9339934132774199
+  1%|          | 69/10000 [37:25<114:04:39, 41.35s/it]Made it to $1000.2 - Max Money: 1001.12 -  it number: 0 - epsilon: 0.9330698817068888
+  1%|          | 70/10000 [38:07<114:55:04, 41.66s/it]Made it to $999.9 - Max Money: 1000.14 -  it number: 0 - epsilon: 0.9321472732063162
+  1%|          | 71/10000 [38:51<116:10:44, 42.12s/it]Made it to $999.42 - Max Money: 1000.04 -  it number: 0 - epsilon: 0.9312255868530936
+  1%|          | 72/10000 [39:34<116:51:30, 42.37s/it]Made it to $1000.6 - Max Money: 1001.02 -  it number: 0 - epsilon: 0.9303048217255349
+  1%|          | 73/10000 [40:16<117:12:43, 42.51s/it]Made it to $999.8 - Max Money: 1000.25 -  it number: 0 - epsilon: 0.9293849769028744
+  1%|          | 74/10000 [40:58<116:47:48, 42.36s/it]Made it to $999.7 - Max Money: 1000.12 -  it number: 0 - epsilon: 0.9284660514652673
+  1%|          | 75/10000 [41:41<117:21:05, 42.57s/it]Made it to $1001.8 - Max Money: 1001.8 -  it number: 0 - epsilon: 0.9275480444937885
+  1%|          | 76/10000 [42:24<117:01:02, 42.45s/it]Made it to $1000.4 - Max Money: 1000.47 -  it number: 0 - epsilon: 0.9266309550704304
+  1%|          | 77/10000 [43:06<116:49:01, 42.38s/it]Made it to $999.2 - Max Money: 1000.02 -  it number: 0 - epsilon: 0.9257147822781039
+  1%|          | 78/10000 [43:48<116:57:27, 42.44s/it]Made it to $999.62 - Max Money: 1000.22 -  it number: 0 - epsilon: 0.9247995252006359
+  1%|          | 79/10000 [44:32<117:46:09, 42.73s/it]Made it to $1000.0 - Max Money: 1000.31 -  it number: 0 - epsilon: 0.9238851829227694
+  1%|          | 80/10000 [45:15<118:19:10, 42.94s/it]Made it to $1000.4 - Max Money: 1000.52 -  it number: 0 - epsilon: 0.922971754530162
+  1%|          | 81/10000 [45:58<118:09:10, 42.88s/it]Made it to $999.7 - Max Money: 1000.24 -  it number: 0 - epsilon: 0.9220592391093853
+  1%|          | 82/10000 [46:41<118:21:15, 42.96s/it]Made it to $999.5 - Max Money: 1000.05 -  it number: 0 - epsilon: 0.9211476357479235
+  1%|          | 83/10000 [47:24<118:25:28, 42.99s/it]Made it to $1000.0 - Max Money: 1000.03 -  it number: 0 - epsilon: 0.9202369435341734
+  1%|          | 84/10000 [48:08<119:25:35, 43.36s/it]Made it to $999.48 - Max Money: 1000.12 -  it number: 0 - epsilon: 0.9193271615574428
+  1%|          | 85/10000 [48:53<120:17:10, 43.67s/it]Made it to $996.8 - Max Money: 1000.53 -  it number: 0 - epsilon: 0.9184182889079494
+  1%|          | 86/10000 [49:39<122:06:09, 44.34s/it]Made it to $1000.0 - Max Money: 1000.72 -  it number: 0 - epsilon: 0.9175103246768207
+  1%|          | 87/10000 [50:24<123:17:26, 44.77s/it]Made it to $999.9 - Max Money: 1000.15 -  it number: 0 - epsilon: 0.9166032679560924
+  1%|          | 88/10000 [51:10<123:36:48, 44.90s/it]Made it to $999.3 - Max Money: 1000.07 -  it number: 0 - epsilon: 0.9156971178387074
+  1%|          | 89/10000 [51:55<124:09:17, 45.10s/it]Made it to $999.55 - Max Money: 1000.24 -  it number: 0 - epsilon: 0.9147918734185159
+  1%|          | 90/10000 [52:40<123:46:22, 44.96s/it]Made it to $999.98 - Max Money: 1000.43 -  it number: 0 - epsilon: 0.9138875337902731
+  1%|          | 91/10000 [53:23<122:07:36, 44.37s/it]/usr/local/Cellar/python@3.9/3.9.6/Frameworks/Python.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
