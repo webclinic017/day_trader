@@ -1,4 +1,5 @@
 import random
+from re import M
 import numpy as np
 
 class TrainingEnviroment:
@@ -11,8 +12,9 @@ class TrainingEnviroment:
     closing_prices: list
     max_profit: int
     goal_profit: int
+    min_interval: int
 
-    def __init__(self, chunks, closing_prices) -> None:
+    def __init__(self, chunks, closing_prices, min_interval) -> None:
         """ Base level initialier function for the class.
         Takes list of chunks and closing_prices to initialize
         the overall enviroment
@@ -29,8 +31,9 @@ class TrainingEnviroment:
             None
         """
         
+        self.min_interval = min_interval
         self.chunks = chunks
-        self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))
+        self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))
         self.num_chunks = 0
         self.buy_prices = []
         self.curr_money = 1000
@@ -68,7 +71,7 @@ class TrainingEnviroment:
             None
         """
 
-        self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))
+        self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))
         self.buy_prices = []
         self.curr_money = 1000
         self.prev_money = 1000
@@ -332,7 +335,7 @@ class TrainingEnviroment:
         
        
         else:
-            self.curr_chunk = random.randint(0,(len(self.chunks) - 5000))          # Wrapping around to new random location
+            self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))          # Wrapping around to new random location
             return self.step(action, prev_chunk, decay)
             
     def get_random_action(self) -> int:

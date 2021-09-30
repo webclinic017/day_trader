@@ -73,7 +73,7 @@ class ModelTrainer():
 
         return rsi
 
-    def fill_df(self, frame: object, ticker: str) -> tuple[list, list]:
+    def fill_df(self, frame: object, ticker: str):
         """ Finds missing minutes in pandas data frame index and
         approprialtey fills those missing minutes with the general average or, if available
         the price that came before it
@@ -170,7 +170,7 @@ class ModelTrainer():
         else: 
             return [], []
 
-    def create_testing_chunks(self) -> tuple[list, list]:
+    def create_testing_chunks(self):
         """ If not already created, creates list of 3 year date range, downloades
         associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
         and applies the nessesary transformations on it.
@@ -887,7 +887,6 @@ class ModelTrainer():
                 print()
 
                 print(len(env.get_current_state()))
-
             
     def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int):
         """ Overal model controller for the model and the training enviroments. 
@@ -1138,7 +1137,7 @@ def main():
 
             trainer_model = ModelTrainer()
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
-            env = TrainingEnviroment(chunks, closing_prices)
+            env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
             trainer_model.simulate(env, decay, ver)
         
@@ -1156,7 +1155,7 @@ def main():
 
             trainer_model = ModelTrainer()
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
-            env = TrainingEnviroment(chunks, closing_prices)
+            env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
             trainer_model.train_from_save(env, iteration, "cache/" + model_name, "cache/" + target_model_name, "cache/" + replay_mem_name, epsilon, decay, ver)
         
@@ -1169,7 +1168,7 @@ def main():
 
             trainer_model = ModelTrainer()
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
-            env = TrainingEnviroment(chunks, closing_prices)
+            env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
             trainer_model.test(env, model_name, target_model_name, replay_mem_name)
         
@@ -1187,16 +1186,12 @@ def main():
         ver = int(sys.argv[2])
         minute_interval = int(sys.argv[3])
 
-        print(decay)
-        print(ver)
-        print(minute_interval)
-
         if not os.path.exists(f'cache/{ver}'):
             os.makedirs(f'cache/{ver}')
 
         trainer_model = ModelTrainer()
         chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
-        env = TrainingEnviroment(chunks, closing_prices)
+        env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
         trainer_model.simulate(env, decay, ver)
 
