@@ -76,7 +76,7 @@ class TrainingEnviroment:
         self.goal_profit = 1005
         self.num_chunks = 0
 
-    def get_past_10min_avg(self) -> int:
+    def get_past_10_avg(self) -> int:
         """ Calculates the previous 10min of prices data from
         the SPY stock
         
@@ -172,7 +172,7 @@ class TrainingEnviroment:
             buy_prices_list.append(0)
 
         curr_state = np.append(curr_state, buy_prices_list)
-        curr_state = np.append(curr_state, self.curr_money)
+        curr_state = np.append(curr_state, self.get_current_money())
         curr_state = np.append(curr_state, self.num_chunks)
         curr_state = np.append(curr_state, self.goal_profit)
 
@@ -294,7 +294,7 @@ class TrainingEnviroment:
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
 
                 if self.buy_prices:
-                    past_avg = self.get_past_10min_avg()
+                    past_avg = self.get_past_10_avg()
                     current_price = self.closing_prices[self.curr_chunk -1]
                     reward = current_price - past_avg  
                 else:

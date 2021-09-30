@@ -17,7 +17,7 @@ import shutil
 import matplotlib.pyplot as plt
 from dateutil import parser
 from training_enviroment import TrainingEnviroment
-
+import sys
 
 class ModelTrainer():
 
@@ -73,7 +73,7 @@ class ModelTrainer():
 
         return rsi
 
-    def fill_df(self, df: pd.DataFrame(), ticker: str) -> tuple[list, list]:
+    def fill_df(self, frame: object, ticker: str) -> tuple[list, list]:
         """ Finds missing minutes in pandas data frame index and
         approprialtey fills those missing minutes with the general average or, if available
         the price that came before it
@@ -93,15 +93,15 @@ class ModelTrainer():
             None
         """
 
-        times = list(df.index)
+        times = list(frame.index)
         new_times = []
 
         if times:
             
-            current_closing_prices = df[(ticker, 'close')]
+            current_closing_prices = frame[(ticker, 'close')]
             filled_closing_prices = []
 
-            current_volume = df[(ticker, 'volume')]
+            current_volume = frame[(ticker, 'volume')]
             filled_volume = []
 
 
@@ -244,7 +244,7 @@ class ModelTrainer():
 
         return chunks
 
-    def create_training_chunks(self) -> tuple[list, list]:
+    def create_training_chunks(self, minute_interval: int):
         """ If not already created, creates list of 3 year date range, downloades
         associated data with it from Alpaca API. Takes said data, segements it into 10min chunks 
         and applies the nessesary transformations on it.
@@ -261,7 +261,7 @@ class ModelTrainer():
         Side Effects:
             None
         """
-
+        # Increased time intervals are just the average
         if os.path.isfile("cache/SPY_prices.pkl"):
             
             with open("cache/SPY_prices.pkl", "rb") as f:
@@ -353,15 +353,15 @@ class ModelTrainer():
                 pickle.dump(BND_vol, f)
 
 
-        SPY_prices, SPY_closing_prices = self.make_stationary(SPY_prices, True)
-        VTI_prices = self.make_stationary(VTI_prices)
-        VXUS_prices = self.make_stationary(VXUS_prices)
-        BND_prices = self.make_stationary(BND_prices)
+        SPY_prices, SPY_closing_prices = self.make_stationary(SPY_prices, minute_interval, True)
+        VTI_prices = self.make_stationary(VTI_prices, minute_interval)
+        VXUS_prices = self.make_stationary(VXUS_prices, minute_interval)
+        BND_prices = self.make_stationary(BND_prices, minute_interval)
 
-        SPY_vol = self.make_stationary(SPY_vol)
-        VTI_vol = self.make_stationary(VTI_vol)
-        VXUS_vol = self.make_stationary(VXUS_vol)
-        BND_vol = self.make_stationary(BND_vol)
+        SPY_vol = self.make_stationary(SPY_vol, minute_interval)
+        VTI_vol = self.make_stationary(VTI_vol, minute_interval)
+        VXUS_vol = self.make_stationary(VXUS_vol, minute_interval)
+        BND_vol = self.make_stationary(BND_vol, minute_interval)
 
         price_chunks = [VTI_prices, VXUS_prices, BND_prices]
         vol_chunks = [VTI_vol, VXUS_vol, BND_vol]
@@ -418,7 +418,18 @@ class ModelTrainer():
         
         return closing_prices
 
-    def make_stationary(self, prices: dict, get_close: bool = False) -> tuple[list, list]:
+    def segment_and_avg(self, list_to_seg: list, interval: int):
+
+        segmented = [list_to_seg[i:i + interval] for i in range(0, len(list_to_seg), interval)]
+        avg_list = []
+
+        for sub_list in segmented:
+            avg = round(sum(sub_list) / len(sub_list),3)
+            avg_list.append(avg)
+        
+        return avg_list
+
+    def make_stationary(self, prices: dict, min_interval: int, get_close: bool = False):
         """ Takes list of prices and makes the data statioanry by applying
         log transformation to it. Captures orgiional list of prices if get_close
         is True
@@ -446,14 +457,14 @@ class ModelTrainer():
         new_prices = list(price_df['new_prices'])
         old_prices = list(price_df['prices'])
 
-        for i in range(len(prices)):
-            prices[i] = round(new_prices[i], 3)
+        new_prices = self.segment_and_avg(new_prices, min_interval)
+        old_prices = self.segment_and_avg(old_prices, min_interval)
 
         chunks = []
-        for i in range(len(prices)):
+        for i in range(len(new_prices)):
             
-            if i+10 < len(prices):
-                chunks.append(prices[i:i+10])
+            if i+10 < len(new_prices):
+                chunks.append(new_prices[i:i+10])
                 closing_prices.append(old_prices[i:i+10][-1])
         
         if get_close:
@@ -734,31 +745,31 @@ class ModelTrainer():
             Files created for all varaibles and files deleted for all varaibles
         """
 
-        model.save(f"cache/model_{ver}_{it_num}")
+        model.save(f"cache/{ver}/model_{ver}_{it_num}")
 
-        target_model.save(f"cache/target_model_2_{it_num}")
+        target_model.save(f"cache/{ver}/target_model_2_{it_num}")
 
-        with open(f"cache/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
         
-        with open(f"cache/X_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/{ver}/X_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(X, f)
         
-        with open(f"cache/Y_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/{ver}/Y_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(Y, f)
         
-        with open(f"cache/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"cache/{ver}/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(max_profits, f)
         
         if it_num != 0:
-            shutil.rmtree(f"cache/model_{ver}_{it_num-1}")
-            shutil.rmtree(f"cache/target_model_{ver}_{it_num-1}")
-            os.remove(f"cache/replay_mem_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/X_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/Y_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/max_profits_{ver}_{it_num-1}.pkl")
+            shutil.rmtree(f"cache/{ver}/model_{ver}_{it_num-1}")
+            shutil.rmtree(f"cache/{ver}/target_model_{ver}_{it_num-1}")
+            os.remove(f"cache/{ver}/replay_mem_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/{ver}/X_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/{ver}/Y_{ver}_{it_num-1}.pkl")
+            os.remove(f"cache/{ver}/max_profits_{ver}_{it_num-1}.pkl")
         
-    def simulate(self, env: TrainingEnviroment) -> None:
+    def simulate(self, env: TrainingEnviroment, decay: float, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -778,7 +789,6 @@ class ModelTrainer():
         epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
         min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-        decay = 0.005       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
         episode = 0
         total_segment_reward = 0
 
@@ -795,59 +805,89 @@ class ModelTrainer():
 
 
         for i in tqdm(range(1000)):
-
-            done = False
-            steps_to_update_target_model = 0
-            env.reset()
-
-            while(not done):
-
-                total_segment_reward += 1
-                steps_to_update_target_model += 1 
-                random_number = np.random.rand()
-                current_state = env.get_current_state()
-
-                if random_number <= epsilon:  # Explore  
-                    action = env.get_random_action() # Just randomly choosing an action
-                
-                else: #Exploitting
-                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                    action = np.argmax(predicted) 
-                
-                reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-                
-                new_state = current_state               
-                new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
-                
-                index = -4
-                for k in range(9,-1,-1):
-
-                    try:
-                        new_state[index] = np.log(env.buy_prices[k])
-                    except:
-                        new_state[index] = 0
-                    index -= 1
-
-                replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
-
-                # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
-                if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                    self.train(env, replay_memory, model, target_model, done)            # training the main model
-                    
             
-            episode += 1
-            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
-            target_model.set_weights(model.get_weights())
+            try:
+                done = False
+                steps_to_update_target_model = 0
+                env.reset()
 
-            print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
-            X.append(len(X) + 1)
-            max_profits.append(env.max_profit)
-            y.append(env.get_current_money())
-            total_segment_reward = 0
+                while(not done):
 
-            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits, 0)
+                    total_segment_reward += 1
+                    steps_to_update_target_model += 1 
+                    random_number = np.random.rand()
+                    current_state = env.get_current_state()
+
+                    if random_number <= epsilon:  # Explore  
+                        action = env.get_random_action() # Just randomly choosing an action
+                    
+                    else: #Exploitting
+
+                        current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                        predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                        action = np.argmax(predicted) 
+                    
+                    reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+                    
+                    new_state = current_state               
+                    new_state[-2] = env.num_chunks
+                    new_state[-3] = env.curr_money
+                    
+                    index = -4
+                    for k in range(9,-1,-1):
+
+                        try:
+                            new_state[index] = np.log(env.buy_prices[k])
+                        except:
+                            new_state[index] = 0
+                        index -= 1
+
+                    replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
+
+                    # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
+                    if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+                        self.train(env, replay_memory, model, target_model, done)            # training the main model
+                        
+                
+                episode += 1
+                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+                target_model.set_weights(model.get_weights())
+
+                print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
+                X.append(len(X) + 1)
+                max_profits.append(env.max_profit)
+                y.append(env.get_current_money())
+                total_segment_reward = 0
+
+                self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits, ver)
+            
+            except Exception as e:
+                print(f"FUCKK WHY: {e}")
+
+                print(len(env.chunks[env.curr_chunk]))
+                print(env.chunks[env.curr_chunk])
+                print()
+
+                buy_prices_list = list(np.log(env.buy_prices))
+
+                for i in range(10-len(env.buy_prices)):
+                    buy_prices_list.append(0)
+                
+                print(len(buy_prices_list))
+                print(buy_prices_list)
+                print()
+
+                print(env.get_current_money())
+                print()
+
+                print(env.num_chunks)
+                print()
+
+                print(env.goal_profit)
+                print()
+
+                print(len(env.get_current_state()))
+
             
     def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int):
         """ Overal model controller for the model and the training enviroments. 
@@ -1084,55 +1124,85 @@ def main():
     if not os.path.exists('cache'):
         os.makedirs('cache')
 
-    choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
+    if len(sys.argv) == 1:
+        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
 
-    if choice == 1:
+        if choice == 1:
+
+            decay = float(input("Please enter the desired decay value \n"))
+            ver = int(input("Please enter the desired version  \n"))
+            minute_interval = int(input("Please enter the desired time interval in minutes \n"))
+
+            if not os.path.exists(f'cache/{ver}'):
+                os.makedirs(f'cache/{ver}')
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+            env = TrainingEnviroment(chunks, closing_prices)
+
+            trainer_model.simulate(env, decay, ver)
+        
+        elif choice == 2:
+
+            model_name = input("    Please enter the model name \n")
+            target_model_name = input("    Please enter the target model name \n")
+            replay_mem_name = input("    Please enter the replay memory name \n")
+            iteration = int(input("    Please enter the iteration number \n"))
+            epsilon = float(input("    Please enter the epsilon number \n"))
+            decay = float(input("    Please enter the decay number \n"))
+            ver = int(input("    Please enter the version number \n"))
+            minute_interval = int(input("Please enter the desired minute interval \n"))
+
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+            env = TrainingEnviroment(chunks, closing_prices)
+
+            trainer_model.train_from_save(env, iteration, "cache/" + model_name, "cache/" + target_model_name, "cache/" + replay_mem_name, epsilon, decay, ver)
+        
+        elif choice == 3:
+
+            model_name = input("    Please enter the model name \n")
+            target_model_name = input("    Please enter the target model name \n")
+            replay_mem_name = input("    Please enter the replay memory name \n")
+            minute_interval = int(input("Please enter the desired minute interval \n"))
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+            env = TrainingEnviroment(chunks, closing_prices)
+
+            trainer_model.test(env, model_name, target_model_name, replay_mem_name)
+        
+        elif choice == 4:
+
+            X = input("     Please enter the X file name \n")
+            Y = input("     Please enter the Y file name \n")
+
+            trainer_model = ModelTrainer()
+            trainer_model.trend_analysis(X,Y)
+
+    elif len(sys.argv) == 4:
+
+        decay = float(sys.argv[1])
+        ver = int(sys.argv[2])
+        minute_interval = int(sys.argv[3])
+
+        print(decay)
+        print(ver)
+        print(minute_interval)
+
+        if not os.path.exists(f'cache/{ver}'):
+            os.makedirs(f'cache/{ver}')
+
         trainer_model = ModelTrainer()
-        chunks, closing_prices = trainer_model.create_training_chunks()
+        chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
         env = TrainingEnviroment(chunks, closing_prices)
-        trainer_model.simulate(env)
+
+        trainer_model.simulate(env, decay, ver)
+
+
+
     
-    elif choice == 2:
-
-        model_name = input("    Please enter the model name \n")
-        target_model_name = input("    Please enter the target model name \n")
-        replay_mem_name = input("    Please enter the replay memory name \n")
-        iteration = int(input("    Please enter the iteration number \n"))
-        epsilon = float(input("    Please enter the epsilon number \n"))
-        decay = float(input("    Please enter the decay number \n"))
-        ver = int(input("    Please enter the version number \n"))
-
-        trainer_model = ModelTrainer()
-        chunks, closing_prices = trainer_model.create_training_chunks()
-        env = TrainingEnviroment(chunks, closing_prices)
-        trainer_model.train_from_save(env, iteration, "cache/" + model_name, "cache/" + target_model_name, "cache/" + replay_mem_name, epsilon, decay, ver)
-    
-    elif choice == 3:
-
-        model_name = input("    Please enter the model name \n")
-        target_model_name = input("    Please enter the target model name \n")
-        replay_mem_name = input("    Please enter the replay memory name \n")
-
-        trainer_model = ModelTrainer()
-        chunks, closing_prices = trainer_model.create_training_chunks()
-        env = TrainingEnviroment(chunks, closing_prices)
-        trainer_model.test(env, model_name, target_model_name, replay_mem_name)
-    
-    elif choice == 4:
-
-        X = input("     Please enter the X file name \n")
-        Y = input("     Please enter the Y file name \n")
-
-        trainer_model = ModelTrainer()
-        trainer_model.trend_analysis(X,Y)
-
-
-
-    #chunks, closing_prices = create_training_chunks()
-    #env = Enviroment(chunks, closing_prices)
-    #test(env)
-
-   #trend_analysis()
 
 if __name__ == '__main__':
     main()
