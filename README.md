@@ -100,6 +100,11 @@ For input, we are currently only using the price and volume of SPY, VXUS, BND an
 
 Secondly and easier to develope, windowing. We are currently feeding the model 10, 1 min intervals of time, for a 10min window on each stock. Early in the development I attempted 100, 1 min, but the model performed worse due to a noisy input space. However, I would like to try things such as 10, 5 min intervals, or 10, 10min intervals, 10, 30 min intervals, ect. This should be easy to test and conclusivley state which is the most effective. 
 
+Please view the following document for a comprehesnive test list and analysis of past configurations and performances of the model:
+```
+https://docs.google.com/document/d/1bdCvDyaqvKDXc7C1p2EyDhswiw93gYrBEnMIBK_-0oQ/edit?usp=sharing
+```
+
 # Contributing
 This is a private project and a private repository. No external contributions are currently wanted or accepted. 
 
