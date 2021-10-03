@@ -13,6 +13,7 @@ class TrainingEnviroment:
     max_profit: int
     goal_profit: int
     min_interval: int
+    week: int
 
     def __init__(self, chunks, closing_prices, min_interval) -> None:
         """ Base level initialier function for the class.
@@ -32,6 +33,7 @@ class TrainingEnviroment:
         """
         
         self.min_interval = min_interval
+        self.week = int(1655 / self.min_interval)
         self.chunks = chunks
         self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))
         self.num_chunks = 0
@@ -286,7 +288,7 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 100:
+                if self.curr_money > 100 and len(self.buy_prices) < 10:
                     self.buy_prices.append(self.closing_prices[self.curr_chunk -1])       # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 100
 
@@ -310,7 +312,7 @@ class TrainingEnviroment:
                 #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
             
-            if self.num_chunks > 1654 and self.num_chunks % 1655 == 0:        # Checking if we made 1 % for the week
+            if self.num_chunks > (self.week - 1) and self.num_chunks % self.week == 0:        # Checking if we made 1 % for the week
 
                 if self.get_current_money() < self.goal_profit:
 
@@ -336,7 +338,7 @@ class TrainingEnviroment:
        
         else:
             self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))          # Wrapping around to new random location
-            return self.step(action, prev_chunk, decay)
+            return 0, True
             
     def get_random_action(self) -> int:
         """ Returns random number between [1,3], inclusive

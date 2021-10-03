@@ -747,7 +747,7 @@ class ModelTrainer():
 
         model.save(f"cache/{ver}/model_{ver}_{it_num}")
 
-        target_model.save(f"cache/{ver}/target_model_2_{it_num}")
+        target_model.save(f"cache/{ver}/target_model_{ver}_{it_num}")
 
         with open(f"cache/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
