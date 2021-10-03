@@ -1051,16 +1051,27 @@ class ModelTrainer():
                 action = env.get_random_action() # Just randomly choosing an action
             
             else: #Exploitting
-                try:
-                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                    action = np.argmax(predicted) 
-                except:
-                    print("This section broke")
+                current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                action = np.argmax(predicted) 
+                
             
             action_list.append(action)
-            reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-            new_state = env.get_current_state()                 # is this bad? Because maybe the model is assuming its affecting the market place with actions, should proboballt just update the current money and not the actual step
+            reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+                  
+            new_state = current_state               
+            new_state[-2] = env.num_chunks
+            new_state[-3] = env.curr_money
+            
+            index = -4
+            for k in range(9,-1,-1):
+
+                try:
+                    new_state[index] = np.log(env.buy_prices[k])
+                except:
+                    new_state[index] = 0
+                index -= 1
+
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
             # 3. Update the Main Network using the Bellman Equation
@@ -1165,12 +1176,13 @@ def main():
             target_model_name = input("    Please enter the target model name \n")
             replay_mem_name = input("    Please enter the replay memory name \n")
             minute_interval = int(input("Please enter the desired minute interval \n"))
+            ver = int(input("Please enter the model version \n"))
 
             trainer_model = ModelTrainer()
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
             env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
-            trainer_model.test(env, model_name, target_model_name, replay_mem_name)
+            trainer_model.test(env, f"cache/{ver}/{model_name}", f"cache/{ver}/{target_model_name}", f"cache/{ver}/{replay_mem_name}")
         
         elif choice == 4:
 
