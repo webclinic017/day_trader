@@ -1057,7 +1057,7 @@ class ModelTrainer():
                 
             
             action_list.append(action)
-            reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
                   
             new_state = current_state               
             new_state[-2] = env.num_chunks

@@ -210,7 +210,7 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 100:
+                if self.curr_money > 100 and len(self.buy_prices) < 10:
                     self.buy_prices.append(self.closing_prices[self.curr_chunk -1])       # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 100
 
@@ -221,7 +221,7 @@ class TrainingEnviroment:
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
 
                 if self.buy_prices:
-                    past_avg = self.get_past_10min_avg()
+                    past_avg = self.get_past_10_avg()
                     current_price = self.closing_prices[self.curr_chunk -1]
                     reward = current_price - past_avg  
                 else:
@@ -234,14 +234,14 @@ class TrainingEnviroment:
                 #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
             
-            if self.num_chunks > 1654 and self.num_chunks % 1655 == 0:        # Checking if we made 1 % for the week
+            if self.num_chunks > (self.week - 1) and self.num_chunks % self.week == 0:        # Checking if we made 0.5 % for the week
 
                 if self.get_current_money() < self.goal_profit:
 
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
                     
-                    return -100, False  # Not ending it if we don't make quota, just penalizing
+                    return -100, False              # Not ending because were testing
 
                 else:
                     
@@ -259,7 +259,8 @@ class TrainingEnviroment:
         
        
         else:
-            return 0, True # hit the end, ending the simulation
+            self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))          # Wrapping around to new random location
+            return 0, True
 
     def step(self, action, prev_chunk, decay) -> int: 
         """ Executes the decided action from the model. If 1,
