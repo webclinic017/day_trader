@@ -1,11 +1,0 @@
-2021-10-02 16:50:57.371074: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
-To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
-  0%|          | 0/1000 [00:00<?, ?it/s]2021-10-02 16:50:57.546268: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
-Made it to $1003.11 - Max Money: 1003.24 -  it number: 0 - epsilon: 0.9901493354116764
-2021-10-02 16:51:08.798108: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
-  0%|          | 1/1000 [00:11<3:18:38, 11.93s/it]Made it to $1000.29 - Max Money: 1001.53 -  it number: 1 - epsilon: 0.9803966865736877
-  0%|          | 2/1000 [00:42<6:25:06, 23.15s/it]Made it to $1004.5 - Max Money: 1006.92 -  it number: 2 - epsilon: 0.970741078213023
-  0%|          | 3/1000 [01:45<11:25:45, 41.27s/it]Made it to $993.0 - Max Money: 1003.58 -  it number: 3 - epsilon: 0.9611815447608
-  0%|          | 4/1000 [02:19<10:34:40, 38.23s/it]Made it to $996.64 - Max Money: 1000.35 -  it number: 4 - epsilon: 0.9517171302557069
-  0%|          | 5/1000 [02:52<10:01:00, 36.24s/it]/usr/local/Cellar/python@3.9/3.9.7/Frameworks/Python.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d '

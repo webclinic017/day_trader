@@ -993,7 +993,7 @@ class ModelTrainer():
 
             self.save_state(model, target_model, episode, replay_memory, X, y, max_profits, ver)
 
-    def test(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str) -> None:
+    def test_v2(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
         for the model to learn on. Gives the model the current states, exectutes the action,
@@ -1017,13 +1017,9 @@ class ModelTrainer():
         """
 
         epsilon = 0.01 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
-        max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
-        min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-        decay = 0.01       # rate of increasing exploitation vs exploration - Change decay rate, we have 30,000 examples but reach full optimization after 1000
-        episode = 0
 
         total_length = int(len(env.chunks)/3)
-        done = False
+        overal_done = False
     
         current_money = []
         iteration = []
@@ -1036,8 +1032,14 @@ class ModelTrainer():
         
         i = 0
         env.load_year_test()
+        base_money = []
+        buy_positions = []
+        sell_positions = []
+        base_price = env.get_current_stock_price()
+        money_made = 0
 
-        while(not done):
+
+        while(not overal_done):
             
             done = False
             steps_to_update_target_model = 0
@@ -1045,7 +1047,7 @@ class ModelTrainer():
             steps_to_update_target_model += 1 
             random_number = np.random.rand()
             current_state = env.get_current_state()
-            
+            base_money.append(1000 * (env.get_current_stock_price() / base_price))
 
             if random_number <= epsilon:  # Explore  
                 action = env.get_random_action() # Just randomly choosing an action
@@ -1057,8 +1059,14 @@ class ModelTrainer():
                 
             
             action_list.append(action)
-            reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-                  
+            
+            if action == 1:
+                buy_positions.append(i)
+            elif action == 3:
+                sell_positions.append(i)
+                
+            reward, weekly_done, overal_done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+
             new_state = current_state               
             new_state[-2] = env.num_chunks
             new_state[-3] = env.curr_money
@@ -1074,29 +1082,155 @@ class ModelTrainer():
 
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
-            # 3. Update the Main Network using the Bellman Equation
-            if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                self.train(env, replay_memory, model, target_model, done)            # training the main model
+
+            print(f"Current money =  ${env.get_current_money()} -  it number: {i} / {total_length} - epsilon: {epsilon}")
+            current_money.append(env.get_current_money())
+            iteration.append(i)
+            i += 1
+
+            if weekly_done:
+                print(f"We didn't meet goal profit, made it to: {env.get_current_money()} , should have made it to: {env.goal_profit}")
+                money_made += env.get_current_money() - 1000
+                print(f"Current made money: {money_made}")
+                env.goal_profit = 1005
+                env.curr_money = 1000
+                env.buy_prices = []
+                env.prev_money = 1000
+                env.max_profit = 1000
+                env.num_chunks = 0
+
+
+        
+        with open(f"Completed_Models/results/current_money_{ver}.pkl", 'wb') as f:
+            pickle.dump(current_money, f)
+        with open(f"Completed_Models/results/buy_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(buy_positions, f)
+        with open(f"Completed_Models/results/sell_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(sell_positions, f)
+        with open(f"Completed_Models/results/base_money_{ver}.pkl", 'wb') as f:
+            pickle.dump(base_money, f)
+        with open(f"Completed_Models/results/iteration_{ver}.pkl", 'wb') as f:
+            pickle.dump(iteration, f)
+        with open(f"Completed_Models/results/action_list_{ver}.pkl", 'wb') as f:
+            pickle.dump(action_list, f)
+
+        return money_made
+        
+    def test(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str, ver: int) -> None:
+        """ Overal model controller for the model and the training enviroments. 
+        Controls the flow of inforamtion and helps simulate realtime data extraction
+        for the model to learn on. Gives the model the current states, exectutes the action,
+        updates the state and trains the model if nesseary. Also controls tracking of all
+        relevant meta-data around training process. Only runs for the past year.
+        
+        Arguments:
+            env (TrainingEnviroment): The associated training enviroment with the model
+
+            model_name (str): Name of the model folder
+
+            target_model_name (str): Name of the target model folder
+
+            replay_mem_name (str): Name of replay memory file
+        
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
+
+        epsilon = 0.01 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
+
+        total_length = int(len(env.chunks)/3)
+        done = False
+    
+        current_money = []
+        iteration = []
+        action_list = []
+
+        model = keras.models.load_model(model_name)
+        target_model = keras.models.load_model(target_model_name) # Making neural net with input layer equal to state space size, and output layer equal to action space size
+        with open(replay_mem_name, 'rb') as f:
+            replay_memory = pickle.load(f)
+        
+        i = 0
+        env.load_year_test()
+        base_money = []
+        buy_positions = []
+        sell_positions = []
+        base_price = env.get_current_stock_price()
+
+
+        while(not done):
             
-            if steps_to_update_target_model % 100 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                episode += 1
-                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
-                target_model.set_weights(model.get_weights())
+            done = False
+            steps_to_update_target_model = 0
             
+            steps_to_update_target_model += 1 
+            random_number = np.random.rand()
+            current_state = env.get_current_state()
+            base_money.append(1000 * (env.get_current_stock_price() / base_price))
+
+            if random_number <= epsilon:  # Explore  
+                action = env.get_random_action() # Just randomly choosing an action
+            
+            else: #Exploitting
+                current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                action = np.argmax(predicted) 
+                
+            
+            action_list.append(action)
+            
+            if action == 1:
+                buy_positions.append(i)
+            elif action == 3:
+                sell_positions.append(i)
+                
+            reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+
+            new_state = current_state               
+            new_state[-2] = env.num_chunks
+            new_state[-3] = env.curr_money
+            
+            index = -4
+            for k in range(9,-1,-1):
+
+                try:
+                    new_state[index] = np.log(env.buy_prices[k])
+                except:
+                    new_state[index] = 0
+                index -= 1
+
+            replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
+
 
             print(f"Current money =  ${env.get_current_money()} -  it number: {i} / {total_length} - epsilon: {epsilon}")
             current_money.append(env.get_current_money())
             iteration.append(i)
             i += 1
         
-        with open(f"current_money.pkl", 'wb') as f:
+        with open(f"Completed_Models/results/current_money_{ver}.pkl", 'wb') as f:
             pickle.dump(current_money, f)
-        with open(f"iteration.pkl", 'wb') as f:
+        with open(f"Completed_Models/results/buy_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(buy_positions, f)
+        with open(f"Completed_Models/results/sell_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(sell_positions, f)
+        with open(f"Completed_Models/results/base_money_{ver}.pkl", 'wb') as f:
+            pickle.dump(base_money, f)
+        with open(f"Completed_Models/results/iteration_{ver}.pkl", 'wb') as f:
             pickle.dump(iteration, f)
-        with open(f"action_list.pkl", 'wb') as f:
+        with open(f"Completed_Models/results/action_list_{ver}.pkl", 'wb') as f:
             pickle.dump(action_list, f)
+        
+        if env.get_current_money() < 1000:
+            print("How")
+            print(env.get_current_money())
 
-    def trend_analysis(self, X_name: str, Y_name: str) -> None:
+
+        return env.get_current_money()
+
+    def trend_analysis(self, ver: str, it: str) -> None:
         """ Takes the currnet data files for iterations and prices from
         hardcoded variables. Plots into line graph and plots best fit line 
         across for general trend analysis.
@@ -1113,20 +1247,90 @@ class ModelTrainer():
             None
         """
 
-        with open(X_name, 'rb') as f:
-            X = np.array(pickle.load(f))
         
-        with open(Y_name, 'rb') as f:
-            Y = np.array(pickle.load(f))
+        with open(f"completed_models/{ver}/X_{ver}_{it}.pkl", 'rb') as f:
+            X = list(pickle.load(f))
+        with open(f"completed_models/{ver}/Y_{ver}_{it}.pkl", 'rb') as f:
+            Y = list(pickle.load(f))
+        with open(f"completed_models/{ver}/max_profits_{ver}_{it}.pkl", 'rb') as f:
+            max_p = list(pickle.load(f))
+        
 
 
-        Y = Y[int(len(Y)/3):]
+        max_p = np.array(max_p)
+        X = np.array(X)
+        Y= np.array(Y)
+
+    
+        plt.plot(X, Y)
+        m, b = np.polyfit(X, Y, 1)
+        
+        plt.plot(X, m*X+b)
+        print(f"Slope: {m}")
+
+        m_b, b_b = np.polyfit(X, max_p, 1)
+        print(f"Max Profit Slop: {m_b}")
+
+        plt.show()
+        
+    def test_trend_analysis(self, ver: str) -> None:
+        """ Takes the currnet data files for iterations and prices from
+        hardcoded variables. Plots into line graph and plots best fit line 
+        across for general trend analysis.
+        
+        Arguments:
+            X_name (str): Name of X file
+
+            Y_name (str): Name of Y file
+        
+        Return:
+            None
+        
+        Side Effects:
+            None
+        """
+
+        
+        with open(f"completed_models/results/iteration_{ver}.pkl", 'rb') as f:
+            X = list(pickle.load(f))
+        with open(f"completed_models/results/base_money_{ver}.pkl", 'rb') as f:
+            Y_base = list(pickle.load(f))
+        with open(f"completed_models/results/current_money_{ver}.pkl", 'rb') as f:
+            Y = list(pickle.load(f))
+        with open(f"completed_models/results/buy_pos_{ver}.pkl", 'rb') as f:
+            buy_pos = list(pickle.load(f))
+        with open(f"completed_models/results/sell_pos_{ver}.pkl", 'rb') as f:
+            sell_pos = list(pickle.load(f))
+
+        buy_Y = []
+        sell_Y = []
+
+        for pos in buy_pos:
+            buy_Y.append(Y_base[pos])
+
+        for pos in sell_pos:
+            sell_Y.append(Y_base[pos])
+
+
+        Y_base = np.array(Y_base)
+        X = np.array(X)
+        Y= np.array(Y)
+
+        plt.scatter(buy_pos, buy_Y, marker='v', color='g')
+        plt.scatter(sell_pos, sell_Y, marker='v', color='r')
 
         plt.plot(X, Y)
         m, b = np.polyfit(X, Y, 1)
         
         plt.plot(X, m*X+b)
         print(f"Slop: {m}")
+
+        plt.plot(X, Y_base)
+        m_b, b_b = np.polyfit(X, Y_base, 1)
+        
+        plt.plot(X, m_b*X+b_b)
+        print(f"Base Slop: {m_b}")
+
         plt.show()
 
 def main():
@@ -1172,25 +1376,26 @@ def main():
         
         elif choice == 3:
 
-            model_name = input("    Please enter the model name \n")
-            target_model_name = input("    Please enter the target model name \n")
-            replay_mem_name = input("    Please enter the replay memory name \n")
             minute_interval = int(input("Please enter the desired minute interval \n"))
             ver = int(input("Please enter the model version \n"))
+            it = int(input("Please enter the model iteration \n"))
 
             trainer_model = ModelTrainer()
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
-            env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
-            trainer_model.test(env, f"cache/{ver}/{model_name}", f"cache/{ver}/{target_model_name}", f"cache/{ver}/{replay_mem_name}")
-        
+            results = 0
+            for i in tqdm(range(minute_interval+1)):
+                env = TrainingEnviroment(chunks, closing_prices, minute_interval)
+                results += trainer_model.test(env, f"Completed_Models/{ver}/model_{ver}_{it}", f"Completed_Models/{ver}/target_model_{ver}_{it}", f"Completed_Models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
+
+            print("average: " + str(results/1))
         elif choice == 4:
 
-            X = input("     Please enter the X file name \n")
-            Y = input("     Please enter the Y file name \n")
+            ver = input("Please enter the version number: \n")
+            it = input("Please enter the iteration number: \n")
 
             trainer_model = ModelTrainer()
-            trainer_model.trend_analysis(X,Y)
+            trainer_model.trend_analysis(ver, it)
 
     elif len(sys.argv) == 4:
 

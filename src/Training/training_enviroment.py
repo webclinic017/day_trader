@@ -44,6 +44,9 @@ class TrainingEnviroment:
         self.goal_profit = 1005
         self.closing_prices = closing_prices
     
+    def get_current_stock_price(self):
+        return self.closing_prices[self.curr_chunk]
+
     def load_year_test(self) -> None:
         """ Sets the chunks as the last third
         to test the previous year of data
@@ -120,6 +123,9 @@ class TrainingEnviroment:
         hypothetical = 0
 
         for buy_price in self.buy_prices:
+            
+            curr = self.closing_prices[self.curr_chunk]
+            spread = self.closing_prices[self.curr_chunk-10:self.curr_chunk+10]
             hypothetical += (100 * (self.closing_prices[self.curr_chunk] / buy_price))
         
         return round((cash+hypothetical), 2)
@@ -203,7 +209,7 @@ class TrainingEnviroment:
        
         self.num_chunks += 1
 
-        if self.curr_chunk + 1 < int(len(self.chunks)):
+        if self.curr_chunk < (len(self.chunks) -1):
  
             self.curr_chunk += 1
             reward = 0
@@ -250,16 +256,15 @@ class TrainingEnviroment:
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
 
-                    return 100,  False
+                    return 100, False
 
             if self.get_current_money() > self.max_profit:
                 self.max_profit = self.get_current_money()
 
-            return reward,  False
+            return reward, False
         
        
         else:
-            self.curr_chunk = random.randint(0,(len(self.chunks) - int(5000 / self.min_interval)))          # Wrapping around to new random location
             return 0, True
 
     def step(self, action, prev_chunk, decay) -> int: 
@@ -370,5 +375,7 @@ class TrainingEnviroment:
 
         self.curr_chunk += 1
         return self.chunks[0]
+
+
 
 
