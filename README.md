@@ -92,11 +92,9 @@ of the model trainer. This may include trying new inputs or restructing the mode
 
 # Version Analysis
 
-**Staging**
-Something thing thing
+Please see this document for a detailed explanation on each enviroment and model
 
-**Elephant**
-Something thing thing
+    https://docs.google.com/document/d/1lvRM6XtqxV6H4eJls4FsWzJUNFcDfPCCc9m46HDDoeo/edit?usp=sharing 
 
 
 Please view the following document for a comprehesnive test list and analysis of past configurations and performances of the model:
