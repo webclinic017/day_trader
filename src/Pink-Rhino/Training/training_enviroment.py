@@ -120,6 +120,7 @@ class TrainingEnviroment:
         """
         
         cash = self.curr_money
+        hypothetical = 0
 
         if self.buy_price > 0:
             hypothetical = (1000 * (self.closing_prices[self.curr_chunk] / self.buy_price))
@@ -173,12 +174,7 @@ class TrainingEnviroment:
         """
         
         curr_state = np.copy(self.chunks[self.curr_chunk])
-        buy_prices_list = list(np.log(self.buy_prices))
-
-        for i in range(10-len(self.buy_prices)):
-            buy_prices_list.append(0)
-
-        curr_state = np.append(curr_state, buy_prices_list)
+        curr_state = np.append(curr_state, self.buy_price)
         curr_state = np.append(curr_state, self.get_current_money())
         curr_state = np.append(curr_state, self.num_chunks)
         curr_state = np.append(curr_state, self.goal_profit)
@@ -212,9 +208,9 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 100 and len(self.buy_prices) < 10:
-                    self.buy_prices.append(self.closing_prices[self.curr_chunk -1])       # Appending current price we bought the stock at for previous chunk 
-                    self.curr_money -= 100
+                if self.curr_money > 999 and self.buy_price == -1:
+                    self.buy_price = self.closing_prices[self.curr_chunk -1]    # Appending current price we bought the stock at for previous chunk 
+                    self.curr_money -= 1000
 
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
                 #print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
@@ -222,17 +218,19 @@ class TrainingEnviroment:
 
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
 
-                if self.buy_prices:
+                if self.buy_price > 0:
                     past_avg = self.get_past_10_avg()
                     current_price = self.closing_prices[self.curr_chunk -1]
                     reward = current_price - past_avg  
+                
                 else:
-                    reward = 0
+                    past_avg = self.get_past_10_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = past_avg - current_price 
                 #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
-                reward = self.get_reward(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
-                self.buy_prices = []
+                reward = self.sell(self.closing_prices[self.curr_chunk -1], decay) 
                 #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
             
@@ -247,7 +245,7 @@ class TrainingEnviroment:
 
                 else:
                     
-                    self.goal_profit *= 1.005
+                    self.goal_profit *= 1.01
 
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
@@ -290,7 +288,7 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 1000:
+                if self.curr_money > 999 and self.buy_price == -1:
                     self.buy_price = self.closing_prices[self.curr_chunk -1]      # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 1000
 

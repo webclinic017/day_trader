@@ -145,6 +145,7 @@ class TrainingEnviroment:
         hypothetical = 0
         
         if self.buy_price > 0:
+            
             curr = self.closing_prices[self.curr_chunk]
             hypothetical =  1000 * curr/self.buy_price
         
@@ -167,15 +168,11 @@ class TrainingEnviroment:
         """
         
         if self.buy_price > 0:
-            
-            old_money = self.get_current_money()
-            
-            self.curr_money = round(1000 * (current / self.buy_price), 2)
+                        
+            old_price = self.buy_price
+            self.curr_money = self.get_current_money()
             self.buy_price = -1
-
-            new_money = self.get_current_money()
-
-            return (new_money - old_money)
+            return 1000 * (current / old_price)
 
         else:
             return 0
@@ -309,12 +306,12 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 1000:
+                if self.curr_money > 999 and self.buy_price == -1:
                     self.buy_price = self.closing_prices[self.curr_chunk -1]    # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 1000
-
+                    
                 reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
-                #print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
+                #print(f"     Decided to buy stock at price: {self.buy_price} || {self.get_current_money()} || {self.num_chunks} \n")
                 
 
             elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN

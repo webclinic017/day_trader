@@ -745,29 +745,29 @@ class ModelTrainer():
             Files created for all varaibles and files deleted for all varaibles
         """
 
-        model.save(f"cache/{ver}/model_{ver}_{it_num}")
+        model.save(f"models/{ver}/model_{ver}_{it_num}")
 
-        target_model.save(f"cache/{ver}/target_model_{ver}_{it_num}")
+        target_model.save(f"models/{ver}/target_model_{ver}_{it_num}")
 
-        with open(f"cache/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"models/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
         
-        with open(f"cache/{ver}/X_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"models/{ver}/X_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(X, f)
         
-        with open(f"cache/{ver}/Y_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"models/{ver}/Y_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(Y, f)
         
-        with open(f"cache/{ver}/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
+        with open(f"models/{ver}/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(max_profits, f)
         
         if it_num != 0:
-            shutil.rmtree(f"cache/{ver}/model_{ver}_{it_num-1}")
-            shutil.rmtree(f"cache/{ver}/target_model_{ver}_{it_num-1}")
-            os.remove(f"cache/{ver}/replay_mem_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/{ver}/X_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/{ver}/Y_{ver}_{it_num-1}.pkl")
-            os.remove(f"cache/{ver}/max_profits_{ver}_{it_num-1}.pkl")
+            shutil.rmtree(f"models/{ver}/model_{ver}_{it_num-1}")
+            shutil.rmtree(f"models/{ver}/target_model_{ver}_{it_num-1}")
+            os.remove(f"models/{ver}/replay_mem_{ver}_{it_num-1}.pkl")
+            os.remove(f"models/{ver}/X_{ver}_{it_num-1}.pkl")
+            os.remove(f"models/{ver}/Y_{ver}_{it_num-1}.pkl")
+            os.remove(f"models/{ver}/max_profits_{ver}_{it_num-1}.pkl")
         
     def simulate(self, env: TrainingEnviroment, decay: float, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
@@ -1364,7 +1364,7 @@ def main():
             iteration = int(input("    Please enter the iteration number \n"))
             epsilon = float(input("    Please enter the epsilon number \n"))
             decay = float(input("    Please enter the decay number \n"))
-            ver = int(input("    Please enter the version number \n"))
+            ver = input("    Please enter the version number \n")
             minute_interval = int(input("Please enter the desired minute interval \n"))
 
 
@@ -1372,7 +1372,7 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
             env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
-            trainer_model.train_from_save(env, iteration, "cache/" + model_name, "cache/" + target_model_name, "cache/" + replay_mem_name, epsilon, decay, ver)
+            trainer_model.train_from_save(env, iteration, "models/" + model_name, "models/" + target_model_name, "models/" + replay_mem_name, epsilon, decay, ver)
         
         elif choice == 3:
 

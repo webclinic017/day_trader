@@ -861,8 +861,9 @@ class ModelTrainer():
                     
                     env.reset(reset_num)
                     episode += 1
-                    epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
-                    target_model.set_weights(model.get_weights())
+           
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * i)
+            target_model.set_weights(model.get_weights())
                     
             if not skipped:
                 print(f"Beat market growth of: {env.goal_profit} with: {env.get_current_money()}, in {num_it} iterations - epsilon: {epsilon}")
@@ -870,10 +871,11 @@ class ModelTrainer():
                 print("Unable to beat market, skipping")
 
             X.append(len(X) + 1)
+
             if skipped:
                 y.append(0)
             else:
-                y.append((env.goal_profit - 1000)/num_it)
+                y.append((env.goal_profit - 1000)/ (num_it + 1))
 
             self.save_state(model, target_model, i , replay_memory, X, y, ver)     
 
