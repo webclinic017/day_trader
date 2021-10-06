@@ -98,11 +98,23 @@ class TrainingEnviroment:
             None
         """
 
-        past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        if self.curr_chunk-10 >= 0:
+            past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        else:
+            past_10min = self.closing_prices[0:self.curr_chunk]
+
         total = sum(past_10min)
         avg = total/len(past_10min)
 
         return avg
+
+    def analyize_test_year(self):
+
+        self.load_year_test()
+        differences = [self.closing_prices[self.curr_chunk+885:self.curr_chunk+895]]
+        print(differences)
+
+        
 
     def get_current_money(self) -> int:
         """ Calculates the current equity of the account
@@ -208,7 +220,7 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 999 and self.buy_price == -1:
+                if self.curr_money >= 1000 and self.buy_price == -1:
                     self.buy_price = self.closing_prices[self.curr_chunk -1]    # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 1000
 

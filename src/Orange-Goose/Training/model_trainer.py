@@ -823,6 +823,7 @@ class ModelTrainer():
                     current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                     predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                     action = np.argmax(predicted) 
+                    action += 1
                 
                 reward, done, reset_num = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
                 
@@ -967,6 +968,7 @@ class ModelTrainer():
                 current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                 predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
+                action += 1
                 
             
             action_list.append(action)
@@ -1089,6 +1091,7 @@ class ModelTrainer():
                 current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                 predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
+                action += 1
                 
             
             action_list.append(action)

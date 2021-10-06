@@ -826,6 +826,7 @@ class ModelTrainer():
                     current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                     predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                     action = np.argmax(predicted) 
+                    action += 1
                 
                 reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
                 
@@ -916,10 +917,10 @@ class ModelTrainer():
                 
                 else: #Exploitting
                     
-                   
                     current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                     predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                     action = np.argmax(predicted) 
+                    action += 1
                     
 
                 reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
@@ -1011,6 +1012,7 @@ class ModelTrainer():
                 current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                 predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
+                action += 1
                 
             
             action_list.append(action)
@@ -1133,6 +1135,7 @@ class ModelTrainer():
                 current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                 predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
+                action += 1
                 
             
             action_list.append(action)
@@ -1156,6 +1159,9 @@ class ModelTrainer():
             current_money.append(env.get_current_money())
             iteration.append(i)
             i += 1
+
+            if i == 890:
+                pass
         
         with open(f"models/results/current_money_{ver}.pkl", 'wb') as f:
             pickle.dump(current_money, f)
@@ -1306,7 +1312,7 @@ def main():
             iteration = int(input("    Please enter the iteration number \n"))
             epsilon = float(input("    Please enter the epsilon number \n"))
             decay = float(input("    Please enter the decay number \n"))
-            ver = int(input("    Please enter the version number \n"))
+            ver = input("    Please enter the version number \n")
             minute_interval = int(input("Please enter the desired minute interval \n"))
 
 
@@ -1314,7 +1320,7 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
             env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
-            trainer_model.train_from_save(env, iteration, "cache/" + model_name, "cache/" + target_model_name, "cache/" + replay_mem_name, epsilon, decay, ver)
+            trainer_model.train_from_save(env, iteration, "models/" + model_name, "models/" + target_model_name, "models/" + replay_mem_name, epsilon, decay, ver)
         
         elif choice == 3:
 

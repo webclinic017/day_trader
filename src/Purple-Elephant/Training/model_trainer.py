@@ -806,88 +806,61 @@ class ModelTrainer():
 
         for i in tqdm(range(1000)):
             
-            try:
-                done = False
-                steps_to_update_target_model = 0
-                env.reset()
-
-                while(not done):
-
-                    total_segment_reward += 1
-                    steps_to_update_target_model += 1 
-                    random_number = np.random.rand()
-                    current_state = env.get_current_state()
-
-                    if random_number <= epsilon:  # Explore  
-                        action = env.get_random_action() # Just randomly choosing an action
-                    
-                    else: #Exploitting
-
-                        current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                        predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                        action = np.argmax(predicted) 
-                    
-                    reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-                    
-                    new_state = current_state               
-                    new_state[-2] = env.num_chunks
-                    new_state[-3] = env.get_current_money()
-                    
-                    index = -4
-                    for k in range(9,-1,-1):
-
-                        try:
-                            new_state[index] = np.log(env.buy_prices[k])
-                        except:
-                            new_state[index] = 0
-                        index -= 1
-
-                    replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
-
-                    # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
-                    if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                        self.train(env, replay_memory, model, target_model, done)            # training the main model
-                        
-                
-                episode += 1
-                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
-                target_model.set_weights(model.get_weights())
-
-                print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
-                X.append(len(X) + 1)
-                max_profits.append(env.max_profit)
-                y.append(env.get_current_money())
-                total_segment_reward = 0
-
-                self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits, ver)
             
-            except Exception as e:
-                print(f"FUCKK WHY: {e}")
+            done = False
+            steps_to_update_target_model = 0
+            env.reset()
 
-                print(len(env.chunks[env.curr_chunk]))
-                print(env.chunks[env.curr_chunk])
-                print()
+            while(not done):
 
-                buy_prices_list = list(np.log(env.buy_prices))
+                total_segment_reward += 1
+                steps_to_update_target_model += 1 
+                random_number = np.random.rand()
+                current_state = env.get_current_state()
 
-                for i in range(10-len(env.buy_prices)):
-                    buy_prices_list.append(0)
+                if random_number <= epsilon:  # Explore  
+                    action = env.get_random_action() # Just randomly choosing an action
                 
-                print(len(buy_prices_list))
-                print(buy_prices_list)
-                print()
+                else: #Exploitting
 
-                print(env.get_current_money())
-                print()
+                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                    action = np.argmax(predicted) 
+                
+                reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+                
+                new_state = current_state               
+                new_state[-2] = env.num_chunks
+                new_state[-3] = env.get_current_money()
+                
+                index = -4
+                for k in range(9,-1,-1):
 
-                print(env.num_chunks)
-                print()
+                    try:
+                        new_state[index] = np.log(env.buy_prices[k])
+                    except:
+                        new_state[index] = 0
+                    index -= 1
 
-                print(env.goal_profit)
-                print()
+                replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
-                print(len(env.get_current_state()))
+                # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
+                if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
+                    self.train(env, replay_memory, model, target_model, done)            # training the main model
+                    
             
+            episode += 1
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+            target_model.set_weights(model.get_weights())
+
+            print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
+            X.append(len(X) + 1)
+            max_profits.append(env.max_profit)
+            y.append(env.get_current_money())
+            total_segment_reward = 0
+
+            self.save_state(model, target_model, (episode-1), replay_memory, X, y, max_profits, ver)
+                     
     def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int):
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
@@ -950,20 +923,17 @@ class ModelTrainer():
                     action = env.get_random_action() # Just randomly choosing an action
                 
                 else: #Exploitting
-                    
-                    try:
-                        current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                        predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                        action = np.argmax(predicted) 
-                    except:
-                        print("This section broke")
-                        return 
+
+                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                    action = np.argmax(predicted) 
+         
 
                 reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
                 
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
+                new_state[-3] = env.get_current_money()
 
                 index = -4
                 for k in range(9,-1,-1):
@@ -1344,7 +1314,7 @@ def main():
         if choice == 1:
 
             decay = float(input("Please enter the desired decay value \n"))
-            ver = int(input("Please enter the desired version  \n"))
+            ver = input("Please enter the desired version  \n")
             minute_interval = int(input("Please enter the desired time interval in minutes \n"))
 
             if not os.path.exists(f'cache/{ver}'):
@@ -1377,7 +1347,7 @@ def main():
         elif choice == 3:
 
             minute_interval = int(input("Please enter the desired minute interval \n"))
-            ver = int(input("Please enter the model version \n"))
+            ver = input("Please enter the model version \n")
             it = int(input("Please enter the model iteration \n"))
 
             trainer_model = ModelTrainer()
@@ -1388,7 +1358,7 @@ def main():
                 env = TrainingEnviroment(chunks, closing_prices, minute_interval)
                 results += trainer_model.test(env, f"Completed_Models/{ver}/model_{ver}_{it}", f"Completed_Models/{ver}/target_model_{ver}_{it}", f"Completed_Models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
-            print("average: " + str(results/1))
+            print("average: " + str(results/(minute_interval+1)))
         elif choice == 4:
 
             ver = input("Please enter the version number: \n")
