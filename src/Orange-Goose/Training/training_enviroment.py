@@ -309,7 +309,7 @@ class TrainingEnviroment:
 
             if action == 1:     # Buying a share of the stock
 
-                if self.curr_money > 100:
+                if self.curr_money > 1000:
                     self.buy_price = self.closing_prices[self.curr_chunk -1]    # Appending current price we bought the stock at for previous chunk 
                     self.curr_money -= 1000
 
