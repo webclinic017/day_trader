@@ -786,6 +786,7 @@ class ModelTrainer():
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
         min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
         episode = 0
+        skipped = False
 
         X = []  # 1000 - goal money / number of trys to get it, hopefully this goes up? - Discounts weeks where goal money is 0 (1000)
         y = []
@@ -798,7 +799,7 @@ class ModelTrainer():
 
 
 
-        for i in tqdm(range(100)):
+        for i in tqdm(range(1000)):
             
             num_it = 0
             total_money = 0
@@ -844,6 +845,10 @@ class ModelTrainer():
                 if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                     self.train(env, replay_memory, model, target_model, done)            # training the main model
                 
+                if num_it == 1000:
+                    done = True
+                    skipped = True
+
                 if not done and reset_num > 0:  # Didn't meet quota so resetting on the week
                     num_it += 1
                     total_money += env.get_current_money()
@@ -854,18 +859,25 @@ class ModelTrainer():
 
                     print(f"     Made it to: {env.get_current_money()}, Num of tries: {num_it}, avg: {avg}", end = "\r")
                     
-                    #Restructure to put 1000 in each time
                     env.reset(reset_num)
                     episode += 1
                     epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
                     target_model.set_weights(model.get_weights())
                     
-            
-            print(f"Beat market growth of: {env.goal_profit} with: {env.get_current_money()}, in {num_it} iterations - epsilon: {epsilon}")
+            if not skipped:
+                print(f"Beat market growth of: {env.goal_profit} with: {env.get_current_money()}, in {num_it} iterations - epsilon: {epsilon}")
+            else:
+                print("Unable to beat market, skipping")
 
             X.append(len(X) + 1)
-            y.append(env.get_current_money())
-            self.save_state(model, target_model, i , replay_memory, X, y, ver)          
+            if skipped:
+                y.append(0)
+            else:
+                y.append((env.goal_profit - 1000)/num_it)
+
+            self.save_state(model, target_model, i , replay_memory, X, y, ver)     
+
+            skipped = False     
             
     def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int):
         """ Overal model controller for the model and the training enviroments. 
@@ -896,81 +908,7 @@ class ModelTrainer():
             None
         """
 
-        max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
-        min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
-        episode = iteration
-        total_segment_reward = 0
-
-        X = []
-        y = []
-        max_profits = []
-
-        model = keras.models.load_model(model_name)
-        target_model = keras.models.load_model(target_model_name)
-        with open(replay_mem_name, 'rb') as f:
-            replay_memory = pickle.load(f)
-
-
-
-        for i in tqdm(range(1000 - iteration)):
-
-            done = False
-            steps_to_update_target_model = 0
-            env.reset()
-
-            while(not done):
-
-                total_segment_reward += 1
-                steps_to_update_target_model += 1 
-                random_number = np.random.rand()
-                current_state = env.get_current_state()
-
-                if random_number <= epsilon:  # Explore  
-                    action = env.get_random_action() # Just randomly choosing an action
-                
-                else: #Exploitting
-                    
-                    try:
-                        current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                        predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                        action = np.argmax(predicted) 
-                    except:
-                        print("This section broke")
-                        return 
-
-                reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
-                
-                new_state = current_state               
-                new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
-
-                index = -4
-                for k in range(9,-1,-1):
-
-                    try:
-                        new_state[index] = np.log(env.buy_prices[k])
-                    except:
-                        new_state[index] = 0
-                    index -= 1
-
-                replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
-
-                # 3. Update the Main Network using the Bellman Equation
-                if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                    self.train(env, replay_memory, model, target_model, done)            # training the main model
-                    
-            
-            episode += 1
-            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
-            target_model.set_weights(model.get_weights())
-
-            print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
-            X.append(len(X) + 1)
-            max_profits.append(env.max_profit)
-            y.append(env.get_current_money())
-            total_segment_reward = 0
-
-            self.save_state(model, target_model, episode, replay_memory, X, y, max_profits, ver)
+        return "Implement"
 
     def test_v2(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
