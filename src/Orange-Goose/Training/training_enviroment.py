@@ -150,7 +150,7 @@ class TrainingEnviroment:
         
         return round((cash+hypothetical), 2)
   
-    def get_reward(self, current: int, decay: int) -> int:
+    def sell(self, current: int, decay: int) -> int:
         """ Caclualtes the reward for selling the current stock
 
         
@@ -166,13 +166,16 @@ class TrainingEnviroment:
             None
         """
         
-        reward = 0
-
         if self.buy_price > 0:
             
-            reward = current - self.buy_price
-            self.curr_money = round(1000 * (current / self.buy_price), 1)
-            return round(reward, 1)
+            old_money = self.get_current_money()
+            
+            self.curr_money = round(1000 * (current / self.buy_price), 2)
+            self.buy_price = -1
+
+            new_money = self.get_current_money()
+
+            return (new_money - old_money)
 
         else:
             return 0
@@ -322,12 +325,14 @@ class TrainingEnviroment:
                     reward = current_price - past_avg  
                 
                 else:
-                    reward = 0
+                    past_avg = self.get_past_10_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = past_avg - current_price 
+
                 #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
 
             elif action == 3:   # Selling the stock
-                reward = self.get_reward(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
-                self.buy_price = 0
+                reward = self.sell(self.closing_prices[self.curr_chunk -1], decay)        # Selling based on price that the model has seen and is acting on
                 #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
 
             
