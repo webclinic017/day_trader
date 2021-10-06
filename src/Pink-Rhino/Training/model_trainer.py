@@ -831,16 +831,8 @@ class ModelTrainer():
                 
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
-                
-                index = -4
-                for k in range(9,-1,-1):
-
-                    try:
-                        new_state[index] = np.log(env.buy_prices[k])
-                    except:
-                        new_state[index] = 0
-                    index -= 1
+                new_state[-3] = env.get_current_money()
+                new_state[-4] = env.buy_price
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -924,28 +916,18 @@ class ModelTrainer():
                 
                 else: #Exploitting
                     
-                    try:
-                        current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                        predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                        action = np.argmax(predicted) 
-                    except:
-                        print("This section broke")
-                        return 
+                   
+                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                    predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+                    action = np.argmax(predicted) 
+                    
 
                 reward, done = env.step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
                 
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
-
-                index = -4
-                for k in range(9,-1,-1):
-
-                    try:
-                        new_state[index] = np.log(env.buy_prices[k])
-                    except:
-                        new_state[index] = 0
-                    index -= 1
+                new_state[-3] = env.get_current_money()
+                new_state[-4] = env.buy_price
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -1164,17 +1146,9 @@ class ModelTrainer():
 
             new_state = current_state               
             new_state[-2] = env.num_chunks
-            new_state[-3] = env.curr_money
+            new_state[-3] = env.get_current_money()
+            new_state[-4] = env.buy_price
             
-            index = -4
-            for k in range(9,-1,-1):
-
-                try:
-                    new_state[index] = np.log(env.buy_prices[k])
-                except:
-                    new_state[index] = 0
-                index -= 1
-
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
 

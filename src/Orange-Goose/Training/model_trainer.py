@@ -828,16 +828,8 @@ class ModelTrainer():
                 
                 new_state = current_state               
                 new_state[-2] = env.num_chunks
-                new_state[-3] = env.curr_money
-                
-                index = -4
-                for k in range(9,-1,-1):
-
-                    try:
-                        new_state[index] = np.log(env.buy_prices[k])
-                    except:
-                        new_state[index] = 0
-                    index -= 1
+                new_state[-3] = env.get_current_money()
+                new_state[-4] = env.buy_price
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -1110,19 +1102,10 @@ class ModelTrainer():
 
             new_state = current_state               
             new_state[-2] = env.num_chunks
-            new_state[-3] = env.curr_money
-            
-            index = -4
-            for k in range(9,-1,-1):
-
-                try:
-                    new_state[index] = np.log(env.buy_prices[k])
-                except:
-                    new_state[index] = 0
-                index -= 1
+            new_state[-3] = env.get_current_money()
+            new_state[-4] = env.buy_price
 
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
-
 
             print(f"Current money =  ${env.get_current_money()} -  it number: {i} / {total_length} - epsilon: {epsilon}")
             current_money.append(env.get_current_money())
@@ -1141,12 +1124,7 @@ class ModelTrainer():
             pickle.dump(iteration, f)
         with open(f"models/results/action_list_{ver}.pkl", 'wb') as f:
             pickle.dump(action_list, f)
-        
-        if env.get_current_money() < 1000:
-            print("How")
-            print(env.get_current_money())
-
-
+       
         return env.get_current_money()
 
     def trend_analysis(self, ver: str, it: str) -> None:

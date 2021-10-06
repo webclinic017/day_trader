@@ -831,7 +831,7 @@ class ModelTrainer():
                     
                     new_state = current_state               
                     new_state[-2] = env.num_chunks
-                    new_state[-3] = env.curr_money
+                    new_state[-3] = env.get_current_money()
                     
                     index = -4
                     for k in range(9,-1,-1):
