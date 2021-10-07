@@ -47,7 +47,11 @@ class TrainingEnviroment:
     def weekly_return(self):
 
         weekly_start_prices = self.closing_prices[self.curr_chunk]
-        weekly_stop_prices = self.closing_prices[self.curr_chunk+self.week]
+
+        if self.curr_chunk+self.week < len(self.closing_prices):
+            weekly_stop_prices = self.closing_prices[self.curr_chunk+self.week]
+        else:
+            weekly_stop_prices = self.closing_prices[len(self.closing_prices) - 1]
 
         change = (weekly_stop_prices/weekly_start_prices)
 
@@ -112,7 +116,11 @@ class TrainingEnviroment:
             None
         """
 
-        past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        if self.curr_chunk > 9:
+            past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        else:
+            past_10min = self.closing_prices[0:self.curr_chunk]
+
         total = sum(past_10min)
         avg = total/len(past_10min)
 
@@ -337,8 +345,6 @@ class TrainingEnviroment:
 
                 else:
                     
-                    self.goal_profit *= 1.005
-
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
 

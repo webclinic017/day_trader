@@ -50,7 +50,11 @@ class TrainingEnviroment:
     def weekly_return(self):
 
         weekly_start_prices = self.closing_prices[self.curr_chunk]
-        weekly_stop_prices = self.closing_prices[self.curr_chunk+self.week]
+
+        if self.curr_chunk+self.week < len(self.closing_prices):
+            weekly_stop_prices = self.closing_prices[self.curr_chunk+self.week]
+        else:
+            weekly_stop_prices = self.closing_prices[len(self.closing_prices) - 1]
 
         change = (weekly_stop_prices/weekly_start_prices)
 

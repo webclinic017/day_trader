@@ -114,8 +114,6 @@ class TrainingEnviroment:
         differences = [self.closing_prices[self.curr_chunk+885:self.curr_chunk+895]]
         print(differences)
 
-        
-
     def get_current_money(self) -> int:
         """ Calculates the current equity of the account
         by theorizing how much the stocks are worth if they were sold now

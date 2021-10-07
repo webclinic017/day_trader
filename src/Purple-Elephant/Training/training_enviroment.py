@@ -98,7 +98,11 @@ class TrainingEnviroment:
             None
         """
 
-        past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        if self.curr_chunk > 9:
+            past_10min = self.closing_prices[self.curr_chunk-10:self.curr_chunk]
+        else:
+            past_10min = self.closing_prices[0:self.curr_chunk]
+
         total = sum(past_10min)
         avg = total/len(past_10min)
 
