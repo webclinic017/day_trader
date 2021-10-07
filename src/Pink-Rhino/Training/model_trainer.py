@@ -1058,17 +1058,17 @@ class ModelTrainer():
 
 
         
-        with open(f"Completed_Models/results/current_money_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/current_money_{ver}.pkl", 'wb') as f:
             pickle.dump(current_money, f)
-        with open(f"Completed_Models/results/buy_pos_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/buy_pos_{ver}.pkl", 'wb') as f:
             pickle.dump(buy_positions, f)
-        with open(f"Completed_Models/results/sell_pos_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/sell_pos_{ver}.pkl", 'wb') as f:
             pickle.dump(sell_positions, f)
-        with open(f"Completed_Models/results/base_money_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/base_money_{ver}.pkl", 'wb') as f:
             pickle.dump(base_money, f)
-        with open(f"Completed_Models/results/iteration_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/iteration_{ver}.pkl", 'wb') as f:
             pickle.dump(iteration, f)
-        with open(f"Completed_Models/results/action_list_{ver}.pkl", 'wb') as f:
+        with open(f"models/results/action_list_{ver}.pkl", 'wb') as f:
             pickle.dump(action_list, f)
 
         return money_made
@@ -1196,11 +1196,11 @@ class ModelTrainer():
         """
 
         
-        with open(f"completed_models/{ver}/X_{ver}_{it}.pkl", 'rb') as f:
+        with open(f"models/{ver}/X_{ver}_{it}.pkl", 'rb') as f:
             X = list(pickle.load(f))
-        with open(f"completed_models/{ver}/Y_{ver}_{it}.pkl", 'rb') as f:
+        with open(f"models/{ver}/Y_{ver}_{it}.pkl", 'rb') as f:
             Y = list(pickle.load(f))
-        with open(f"completed_models/{ver}/max_profits_{ver}_{it}.pkl", 'rb') as f:
+        with open(f"models/{ver}/max_profits_{ver}_{it}.pkl", 'rb') as f:
             max_p = list(pickle.load(f))
         
 
@@ -1239,15 +1239,15 @@ class ModelTrainer():
         """
 
         
-        with open(f"completed_models/results/iteration_{ver}.pkl", 'rb') as f:
+        with open(f"models/results/iteration_{ver}.pkl", 'rb') as f:
             X = list(pickle.load(f))
-        with open(f"completed_models/results/base_money_{ver}.pkl", 'rb') as f:
+        with open(f"models/results/base_money_{ver}.pkl", 'rb') as f:
             Y_base = list(pickle.load(f))
-        with open(f"completed_models/results/current_money_{ver}.pkl", 'rb') as f:
+        with open(f"models/results/current_money_{ver}.pkl", 'rb') as f:
             Y = list(pickle.load(f))
-        with open(f"completed_models/results/buy_pos_{ver}.pkl", 'rb') as f:
+        with open(f"models/results/buy_pos_{ver}.pkl", 'rb') as f:
             buy_pos = list(pickle.load(f))
-        with open(f"completed_models/results/sell_pos_{ver}.pkl", 'rb') as f:
+        with open(f"models/results/sell_pos_{ver}.pkl", 'rb') as f:
             sell_pos = list(pickle.load(f))
 
         buy_Y = []

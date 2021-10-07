@@ -247,7 +247,9 @@ class TrainingEnviroment:
             if self.num_chunks > (self.week - 1) and self.num_chunks % self.week == 0:        # Checking if we made 0.5 % for the week
 
                 if self.get_current_money() < self.goal_profit:
-
+                    
+                    self.goal_profit *= 1.01
+                    
                     if self.get_current_money() > self.max_profit:
                         self.max_profit = self.get_current_money()
                     
