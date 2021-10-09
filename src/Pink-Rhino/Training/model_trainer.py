@@ -18,6 +18,11 @@ import matplotlib.pyplot as plt
 from dateutil import parser
 from training_enviroment import TrainingEnviroment
 import sys
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split 
+from sklearn import metrics 
+
+
 
 class ModelTrainer():
 
@@ -981,6 +986,15 @@ class ModelTrainer():
         iteration = []
         action_list = []
 
+        total_buy_positions = []
+        total_sell_positions = []
+
+        weekly_buy_positions = {}
+        weekly_sell_positions = {}
+
+        total_profit = []
+
+
         model = keras.models.load_model(model_name)
         target_model = keras.models.load_model(target_model_name) # Making neural net with input layer equal to state space size, and output layer equal to action space size
         with open(replay_mem_name, 'rb') as f:
@@ -1005,37 +1019,24 @@ class ModelTrainer():
             current_state = env.get_current_state()
             base_money.append(1000 * (env.get_current_stock_price() / base_price))
 
-            if random_number <= epsilon:  # Explore  
-                action = env.get_random_action() # Just randomly choosing an action
-            
-            else: #Exploitting
-                current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
-                predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-                action = np.argmax(predicted) 
-                action += 1
+
+            current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+            predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+            action = np.argmax(predicted) 
+            action += 1
                 
+            if action == 1 and env.curr_money > 999 and env.buy_price == -1:
+                weekly_buy_positions[i] = list(predicted)
             
-            action_list.append(action)
-            
-            if action == 1:
-                buy_positions.append(i)
-            elif action == 3:
-                sell_positions.append(i)
+            elif action == 3 and env.buy_price > 0:
+                weekly_sell_positions[i] = list(predicted)
                 
-            reward, weekly_done, overal_done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            reward, weekly_done, overal_done = env.test_step_v2(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
 
             new_state = current_state               
             new_state[-2] = env.num_chunks
-            new_state[-3] = env.curr_money
-            
-            index = -4
-            for k in range(9,-1,-1):
-
-                try:
-                    new_state[index] = np.log(env.buy_prices[k])
-                except:
-                    new_state[index] = 0
-                index -= 1
+            new_state[-3] = env.get_current_money()
+            new_state[-4] = env.buy_price
 
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -1044,14 +1045,24 @@ class ModelTrainer():
             current_money.append(env.get_current_money())
             iteration.append(i)
             i += 1
+            
 
             if weekly_done:
                 print(f"We didn't meet goal profit, made it to: {env.get_current_money()} , should have made it to: {env.goal_profit}")
                 money_made += env.get_current_money() - 1000
                 print(f"Current made money: {money_made}")
-                env.goal_profit = 1005
+                
+                total_buy_positions.append(weekly_buy_positions)
+                total_sell_positions.append(weekly_sell_positions)
+
+                weekly_buy_positions = {}
+                weekly_sell_positions = {}
+
+                total_profit.append(env.get_current_money() - 1000)
+                
+                env.goal_profit = 1010
                 env.curr_money = 1000
-                env.buy_prices = []
+                env.buy_price = -1
                 env.prev_money = 1000
                 env.max_profit = 1000
                 env.num_chunks = 0
@@ -1060,10 +1071,12 @@ class ModelTrainer():
         
         with open(f"models/results/current_money_{ver}.pkl", 'wb') as f:
             pickle.dump(current_money, f)
-        with open(f"models/results/buy_pos_{ver}.pkl", 'wb') as f:
-            pickle.dump(buy_positions, f)
-        with open(f"models/results/sell_pos_{ver}.pkl", 'wb') as f:
-            pickle.dump(sell_positions, f)
+        with open(f"models/results/total_buy_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(total_buy_positions, f)
+        with open(f"models/results/total_sell_pos_{ver}.pkl", 'wb') as f:
+            pickle.dump(total_sell_positions, f)
+        with open(f"models/results/total_profit_{ver}.pkl", 'wb') as f:
+            pickle.dump(total_profit, f)
         with open(f"models/results/base_money_{ver}.pkl", 'wb') as f:
             pickle.dump(base_money, f)
         with open(f"models/results/iteration_{ver}.pkl", 'wb') as f:
@@ -1120,6 +1133,8 @@ class ModelTrainer():
 
         while(not done):
             
+            old_money = env.get_current_money()
+            
             done = False
             steps_to_update_target_model = 0
             
@@ -1160,8 +1175,8 @@ class ModelTrainer():
             iteration.append(i)
             i += 1
 
-            if i == 890:
-                pass
+            new_money = env.get_current_money()
+
         
         with open(f"models/results/current_money_{ver}.pkl", 'wb') as f:
             pickle.dump(current_money, f)
@@ -1281,13 +1296,57 @@ class ModelTrainer():
 
         plt.show()
 
+    def buy_confidence_analysis(self, ver: str):
+        
+        
+        with open(f"models/results/total_sell_pos_{ver}.pkl", 'rb') as f:
+            total_sell = list(pickle.load(f))
+        with open(f"models/results/total_buy_pos_{ver}.pkl", 'rb') as f:
+            total_buy = list(pickle.load(f))
+        with open(f"models/results/total_profit_{ver}.pkl", 'rb') as f:
+            total_profit = list(pickle.load(f))
+
+        buy_profit = []
+        buy_loss = []
+
+        X_input = []
+        y_output = []
+        clf = linear_model.SGDClassifier()
+
+
+        for i in range(len(total_sell)):
+            
+            if total_profit[i] > 0:
+
+                for pos in total_buy[i]:
+                    buy_profit.append(total_buy[i][pos])
+                    X_input.append(total_buy[i][pos])
+                    y_output.append(1)
+
+            else:
+
+                for pos in total_buy[i]:
+                    buy_loss.append(total_buy[i][pos])
+                    X_input.append(total_buy[i][pos])
+                    y_output.append(0)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X_input, y_output, test_size=0.2, random_state=1) 
+
+        clf = clf.fit(X_train,y_train)
+
+        y_pred = clf.predict(X_test)
+
+        print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+        print("Accuracy:",metrics.confusion_matrix(y_test, y_pred))
+
+
 def main():
 
     if not os.path.exists('cache'):
         os.makedirs('cache')
 
     if len(sys.argv) == 1:
-        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
+        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Weekly Test \n 5.) Trend analysis \n"))
 
         if choice == 1:
 
@@ -1337,7 +1396,24 @@ def main():
                 results += trainer_model.test(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
             print("average: " + str(results/(minute_interval+1)))
+        
         elif choice == 4:
+
+            minute_interval = int(input("Please enter the desired minute interval \n"))
+            ver = input("Please enter the model version \n")
+            it = int(input("Please enter the model iteration \n"))
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+
+            results = 0
+            for i in tqdm(range(1)):
+                env = TrainingEnviroment(chunks, closing_prices, minute_interval)
+                results += trainer_model.test_v2(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
+
+            print("average: " + str(results/(1)))
+
+        elif choice == 5:
 
             ver = input("Please enter the version number: \n")
             it = input("Please enter the iteration number: \n")

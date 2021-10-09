@@ -172,11 +172,13 @@ class TrainingEnviroment:
         """
         
         if self.buy_price > 0:
-                        
-            old_price = self.buy_price
+
+            diff = ((current / self.buy_price) - 1) * 1000        
+            
             self.curr_money = self.get_current_money()
             self.buy_price = -1
-            return 1000 * (current / old_price)
+            
+            return diff
 
         else:
             return 0
@@ -284,6 +286,86 @@ class TrainingEnviroment:
        
         else:
             return 0, True
+
+    def test_step_v2(self, action: int, prev_chunk: list, decay: int) -> int:
+        """ Executes the decided action from the model. If 1,
+        the model buys $100 of SPY stock. If 2, the model holds and 
+        does nothing. If 3, the model sells all current holdings of the
+        SPY stock.
+        
+        Arguments:
+            action (int): The given action from the model
+
+            prev_chunk (list): The list of the previous chunk
+
+        Return:
+            reward (int): The reward given for the model
+        
+        Side Effects:
+            None
+        """
+       
+        self.num_chunks += 1
+
+        if self.curr_chunk < (len(self.chunks) -1):
+ 
+            self.curr_chunk += 1
+            reward = 0
+
+            if action == 1:     # Buying a share of the stock
+
+                if self.curr_money > 999 and self.buy_price == -1:
+                    self.buy_price = self.closing_prices[self.curr_chunk -1]      # Appending current price we bought the stock at for previous chunk 
+                    self.curr_money -= 1000
+
+                reward = 0      # maybe adjust to encourage model to buy stocks if it's a problem buying stocks 
+                #print(f"     Decided to buy stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
+                
+
+            elif action == 2:   # Holding the stock - CAN ADD REWARD FOR HOLDING WHEN GOING UP AND HOLDING WHEN GOING DOWN
+
+                if self.buy_price > 0:
+                    past_avg = self.get_past_10_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = current_price - past_avg  
+                
+                else:
+                    past_avg = self.get_past_10_avg()
+                    current_price = self.closing_prices[self.curr_chunk -1]
+                    reward = past_avg - current_price 
+                #print(f"     Decided to hold stock || {self.get_current_money()} || {self.curr_chunk} \n")
+
+            elif action == 3:   # Selling the stock
+                reward = self.sell(self.closing_prices[self.curr_chunk -1], decay) 
+                #print(f"     Decided to sell stock at price: {self.closing_prices[self.curr_chunk -1]} || {self.get_current_money()} || {self.num_chunks} \n")
+
+            
+            if self.num_chunks > (self.week - 1) and self.num_chunks % self.week == 0:        # Checking if we made 0.5 % for the week
+
+                if self.get_current_money() < self.goal_profit:
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+                    
+                    return -100, True, False              # Not ending because were testing
+
+                else:
+                    
+                    self.goal_profit *= 1.005
+
+                    if self.get_current_money() > self.max_profit:
+                        self.max_profit = self.get_current_money()
+
+                    return 100, True, False
+
+            if self.get_current_money() > self.max_profit:
+                self.max_profit = self.get_current_money()
+
+            return reward, False, False
+        
+       
+        else:
+            return 0, True, True
 
     def step(self, action, prev_chunk, decay) -> int: 
         """ Executes the decided action from the model. If 1,

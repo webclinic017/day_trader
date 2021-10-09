@@ -1026,6 +1026,7 @@ class ModelTrainer():
                 current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
                 predicted = model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
+                action += 1
                 
             
             action_list.append(action)
@@ -1035,7 +1036,7 @@ class ModelTrainer():
             elif action == 3:
                 sell_positions.append(i)
                 
-            reward, weekly_done, overal_done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            reward, weekly_done, overal_done = env.test_step_v2(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
 
             new_state = current_state               
             new_state[-2] = env.num_chunks
@@ -1309,7 +1310,7 @@ def main():
         os.makedirs('cache')
 
     if len(sys.argv) == 1:
-        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
+        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Test weekly Model \n 5) Trend analysis \n"))
 
         if choice == 1:
 
@@ -1354,12 +1355,29 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
 
             results = 0
-            for i in tqdm(range(minute_interval+1)):
+            for i in tqdm(range(2)):
                 env = TrainingEnviroment(chunks, closing_prices, minute_interval)
                 results += trainer_model.test(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
-            print("average: " + str(results/(minute_interval+1)))
+            print("average: " + str(results/(2)))
+        
         elif choice == 4:
+
+            minute_interval = int(input("Please enter the desired minute interval \n"))
+            ver = input("Please enter the model version \n")
+            it = int(input("Please enter the model iteration \n"))
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+
+            results = 0
+            for i in tqdm(range(2)):
+                env = TrainingEnviroment(chunks, closing_prices, minute_interval)
+                results += trainer_model.test_v2(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
+
+            print("average: " + str(results/(2)))
+
+        elif choice == 5:
 
             ver = input("Please enter the version number: \n")
             it = input("Please enter the iteration number: \n")

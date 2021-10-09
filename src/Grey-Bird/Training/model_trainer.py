@@ -949,6 +949,7 @@ class ModelTrainer():
         sell_positions = []
         base_price = env.get_current_stock_price()
         money_made = 0
+        base_money_made = 0
 
 
         while(not overal_done):
@@ -978,20 +979,12 @@ class ModelTrainer():
             elif action == 3:
                 sell_positions.append(i)
                 
-            reward, weekly_done, overal_done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            reward, weekly_done, overal_done = env.test_step_v2(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
 
             new_state = current_state               
             new_state[-2] = env.num_chunks
-            new_state[-3] = env.curr_money
-            
-            index = -4
-            for k in range(9,-1,-1):
-
-                try:
-                    new_state[index] = np.log(env.buy_prices[k])
-                except:
-                    new_state[index] = 0
-                index -= 1
+            new_state[-3] = env.get_current_money()
+            new_state[-4] = env.buy_price
 
             replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
@@ -1004,10 +997,17 @@ class ModelTrainer():
             if weekly_done:
                 print(f"We didn't meet goal profit, made it to: {env.get_current_money()} , should have made it to: {env.goal_profit}")
                 money_made += env.get_current_money() - 1000
-                print(f"Current made money: {money_made}")
-                env.goal_profit = 1005
+                print(f"Start: {base_price}, Finish: {env.get_current_stock_price()}, profit: {((env.get_current_stock_price() / base_price) * 1000) - 1000} ")
+                
+
+                base_money_made += ((env.get_current_stock_price() / base_price) * 1000) - 1000
+                print(f"Current: {base_money_made}")
+                
+                base_price = env.get_current_stock_price()
+
+                env.goal_profit = int(1000 * env.weekly_return())
                 env.curr_money = 1000
-                env.buy_prices = []
+                env.buy_price = -1
                 env.prev_money = 1000
                 env.max_profit = 1000
                 env.num_chunks = 0
@@ -1027,7 +1027,7 @@ class ModelTrainer():
         with open(f"models/results/action_list_{ver}.pkl", 'wb') as f:
             pickle.dump(action_list, f)
 
-        return money_made
+        return base_money_made
         
     def test(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
@@ -1152,12 +1152,9 @@ class ModelTrainer():
             X = list(pickle.load(f))
         with open(f"models/{ver}/Y_{ver}_{it}.pkl", 'rb') as f:
             Y = list(pickle.load(f))
-        with open(f"models/{ver}/max_profits_{ver}_{it}.pkl", 'rb') as f:
-            max_p = list(pickle.load(f))
-        
+       
 
 
-        max_p = np.array(max_p)
         X = np.array(X)
         Y= np.array(Y)
 
@@ -1167,9 +1164,6 @@ class ModelTrainer():
         
         plt.plot(X, m*X+b)
         print(f"Slope: {m}")
-
-        m_b, b_b = np.polyfit(X, max_p, 1)
-        print(f"Max Profit Slop: {m_b}")
 
         plt.show()
         
@@ -1239,7 +1233,7 @@ def main():
         os.makedirs('cache')
 
     if len(sys.argv) == 1:
-        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Trend analysis \n"))
+        choice = int(input(" 1) Train from base level \n 2) Train from saved state \n 3) Test model \n 4) Weekly model test \n 5.) Trend analysis \n"))
 
         if choice == 1:
 
@@ -1284,13 +1278,29 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
 
             results = 0
-            for i in tqdm(range(minute_interval+1)):
+            for i in tqdm(range(1)):
                 env = TrainingEnviroment(chunks, closing_prices, minute_interval)
                 results += trainer_model.test(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
-            print("average: " + str(results/1))
-        
+            print("average: " + str(results/(1)))
+
         elif choice == 4:
+
+            minute_interval = int(input("Please enter the desired minute interval \n"))
+            ver = input("Please enter the model version \n")
+            it = int(input("Please enter the model iteration \n"))
+
+            trainer_model = ModelTrainer()
+            chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
+
+            results = 0
+            for i in tqdm(range(1)):
+                env = TrainingEnviroment(chunks, closing_prices, minute_interval)
+                results += trainer_model.test_v2(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
+
+            print("average: " + str(results/(1)))
+        
+        elif choice == 5:
 
             ver = input("Please enter the version number: \n")
             it = input("Please enter the iteration number: \n")
