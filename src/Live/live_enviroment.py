@@ -8,7 +8,6 @@ from threading import Thread
 import numpy as np
 from datetime import date, timedelta
 from dateutil import parser
-import time
 import logging
 import ecs_logging
 
@@ -44,12 +43,12 @@ class LiveEnviroment():
         """
 
         self.logger = logging.getLogger("app")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         handler = logging.FileHandler('day_trader_logging.json')
         handler.setFormatter(ecs_logging.StdlibFormatter())
         self.logger.addHandler(handler)
         
-        self.logger.debug("Init", extra={"http.request.body.content": "Starting application"})
+        self.logger.info("Init", extra={"http.request.body.content": "Starting application"})
 
         self.api = tradeapi.REST()
         self.auth_data = {
@@ -78,6 +77,8 @@ class LiveEnviroment():
             Starts new thread running start_action_loop function
         """
 
+        self.logger.info("run", extra={"http.request.body.content": f"Starting run function"})
+
         ws.send(json.dumps(self.auth_data))
         listen_message = {"action": "listen", "data": {"streams": ["AM.SPY", "AM.VXUS", "AM.VTI", "AM.BND"]}}
         ws.send(json.dumps(listen_message))
@@ -98,7 +99,7 @@ class LiveEnviroment():
         Side Effects:
             None
         """
-
+        self.logger.info("close", extra={"http.request.body.content": f"Closing web socket"})
         print(f"Closed connection")
         return
 
@@ -120,11 +121,12 @@ class LiveEnviroment():
         Side Effects:
             None
         """
-        
-        self.logger.debug("update_prices", extra={"http.request.body.content": "Got new price"})
+
 
 
         message = eval(message)             # Security risk - Fix later
+
+        self.logger.info("update_prices", extra={"http.request.body.content": f"Got new price: {message}"})
 
         if message["stream"] == "AM.VTI":
             curr_VTI_price = round(np.log(message["data"]["c"]), 3)
@@ -148,6 +150,9 @@ class LiveEnviroment():
             if (len(self.live_model.prev_10_SPY) == 10 and len(self.live_model.prev_10_VXUS) > 0
                 and len(self.live_model.prev_10_BND) > 0 and len(self.live_model.prev_10_VTI) > 0):
                 self.live_model.fill_remaining()
+
+                self.logger.info("update_prices", extra={"http.request.body.content": f"Reached 10 prices in spy and atleast one in the others, filling now"})
+
 
 
 def main():

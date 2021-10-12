@@ -11,11 +11,15 @@ import matplotlib.pyplot as plt
 import websocket, json
 import time
 from threading import Thread
+import logging
+import ecs_logging
 
 
 class LiveModel():
 
     api: tradeapi.REST
+    logger: logging.Logger
+
 
     prev_10_SPY: deque
     prev_10_VTI: deque
@@ -57,6 +61,14 @@ class LiveModel():
             None
         """
         
+        self.logger = logging.getLogger("app")
+        self.logger.setLevel(logging.INFO)
+        handler = logging.FileHandler('day_trader_logging.json')
+        handler.setFormatter(ecs_logging.StdlibFormatter())
+        self.logger.addHandler(handler)
+
+        self.logger.info("Init", extra={"http.request.body.content": "Starting Live Model"})
+
         self.api = tradeapi.REST()
 
         self.prev_10_BND = deque(maxlen=10)
@@ -64,11 +76,16 @@ class LiveModel():
         self.prev_10_VTI = deque(maxlen=10)
         self.prev_10_VXUS = deque(maxlen=10)
 
-        self.model = keras.models.load_model(f"cache/(LIVE)model_1_{it}")
-        self.target_model = keras.models.load_model(f"cache/(LIVE)target_model_1_{it}")
+        try:
+            self.model = keras.models.load_model(f"cache/(LIVE)model_1_{it}")
+            self.target_model = keras.models.load_model(f"cache/(LIVE)target_model_1_{it}")
+            with open(f"cache/(LIVE)replay_mem_1_{it}.pkl", 'rb') as f:
+                self.replay_memory = pickle.load(f)
         
-        with open(f"cache/(LIVE)replay_mem_1_{it}.pkl", 'rb') as f:
-            self.replay_memory = pickle.load(f)
+        except:
+            self.logger.critical("Init", extra={"http.request.body.content": "Mddles were not loaded"})
+            exit()
+        
         
         self.buy_prices = []
         self.curr_money = float(self.api.get_account().equity)
@@ -122,6 +139,8 @@ class LiveModel():
             None
         """
         
+        self.logger.info("fill_remaining", extra={"http.request.body.content": "Filling the deques to 10"})
+
         for i in range(10 - len(self.prev_10_VXUS)):
             self.prev_10_VXUS.append(self.prev_10_VXUS[len(self.prev_10_VXUS) - 1])
         
@@ -176,7 +195,12 @@ class LiveModel():
             None
         """
 
-        self.api.submit_order(symbol="SPY", notional=100.00)
+        try:
+            self.api.submit_order(symbol="SPY", notional=100.00)
+            self.logger.info("execute_buy", extra={"http.request.body.content": "Executed buy"})
+
+        except:
+            self.logger.critical("execute_buy", extra={"http.request.body.content": "Unable to execute buy"})
         
     def train(self, replay_memory, model, target_model, done) -> None:
         """ If the replay memeory is over 1000 entries, the model 
@@ -236,12 +260,18 @@ class LiveModel():
         Side Effects:
             None
         """
+        try:
+            self.api.close_position("SPY")
+            equity = float(self.api.get_account().equity)
+            self.curr_money = equity
 
-        self.api.close_position("SPY")
-        equity = float(self.api.get_account().equity)
-        self.curr_money = equity
+            self.logger.info("execute_sell", extra={"http.request.body.content": "Executed sell"})
 
-        return equity
+            return equity
+        
+        except:
+            self.logger.critical("execute_buy", extra={"http.request.body.content": "Unable to execut sell"})
+            return -1
 
     def execute_action(self, action: int) -> None:
         """ Executes the decided action from the model. If 1,
@@ -268,6 +298,7 @@ class LiveModel():
                 self.execute_buy()
                 self.curr_money -= 100
                 print("Decided to buy")
+                self.logger.info("execute_action", extra={"http.request.body.content": "Buying"})
 
 
         elif action == 2:
@@ -276,12 +307,14 @@ class LiveModel():
                 past_avg = self.get_10min_avg()
                 reward = self.prev_10_SPY[9] - past_avg
                 print("Decided to hold")
+                self.logger.info("execute_action", extra={"http.request.body.content": "Holding"})
 
         elif action == 3:
             old_money = self.curr_money
             new_money = self.execute_sell()
             reward = new_money - old_money
             print("Decided to sell")
+            self.logger.info("execute_action", extra={"http.request.body.content": "Selling"})
 
 
         return reward
