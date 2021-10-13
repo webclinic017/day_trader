@@ -754,7 +754,7 @@ class ModelTrainer():
 
                 # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
                 if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
-                    self.train(env, replay_memory, self.models.model, self.models.target_model, done)            # training the main model
+                    self.models.train(replay_memory, done)            # training the main model
                 
                 if num_it == 1000:
                     done = True
