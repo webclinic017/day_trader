@@ -663,9 +663,9 @@ class ModelTrainer():
             Files created for all varaibles and files deleted for all varaibles
         """
 
-        model.save(f"models/{ver}/model_{ver}_{it_num}")
+        self.models.model.save(f"models/{ver}/model_{ver}_{it_num}")
 
-        target_model.save(f"models/{ver}/target_model_{ver}_{it_num}")
+        self.models.target_model.save(f"models/{ver}/target_model_{ver}_{it_num}")
 
         with open(f"models/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
             pickle.dump(replay_mem, f)
