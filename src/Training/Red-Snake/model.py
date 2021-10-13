@@ -49,7 +49,7 @@ class Model():
         return model
 
 
-    def train(self, replay_memory: deque, model: object, target_model: object, done: bool) -> None:
+    def train(self, replay_memory: deque, done: bool) -> None:
         """ Thes the current enviroment, replay memeory, model and target model
         to test if there is enoguh memory cached. If there is, takes a random 128 
         examples from the memory and uses that to retrain the target model 
