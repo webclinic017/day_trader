@@ -11,10 +11,16 @@ class Model():
     model: object
     target_model: object
     
-    def __init__(self, state_shape: int, action_shape: int) -> None:
+    def __init__(self, *args) -> None:
         
-        self.model = self.create_agent(state_shape, action_shape)
-        self.target_model = self.create_agent(state_shape, action_shape)
+        if len(args) == 0:
+            self.model = None
+            self.target_model = None
+        
+        elif len(args) == 2:
+            self.model = self.create_agent(args[0], args[1])
+            self.target_model = self.create_agent(args[0], args[1])
+
 
     def create_agent(self, state_shape: int, action_shape: int) -> object:
         """ Takes the current state shape and the action space shape
@@ -42,10 +48,10 @@ class Model():
         # Has max model size
         model = keras.Sequential()
 
-        model.add(LSTM(500, input_shape=state_shape, activation='relu', return_sequences=True))
+        model.add(LSTM(175, input_shape=state_shape, activation='relu', return_sequences=True))
         model.add(keras.layers.Dropout(0.25))
 
-        model.add(LSTM(360, activation='relu', return_sequences=True))
+        model.add(LSTM(90, activation='relu', return_sequences=True))
         model.add(keras.layers.Dropout(0.2))
 
         model.add(keras.layers.Dense(action_shape, activation='softmax'))

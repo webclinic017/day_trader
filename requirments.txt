@@ -7,3 +7,7 @@ tqdm
 pandas
 sklearn
 websocket
+
+To do
+    Add requirments saftey unit test
+    validate HTTP response for all API calls, including when pulling data for training

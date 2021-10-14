@@ -24,6 +24,10 @@ class ModelTrainer():
 
     models: Model
 
+    def __init__(self) -> None:
+
+        self.models = Model()
+
     def daterange(self, start_date: datetime, end_date: datetime) -> list:
         """ Outputs a list of dates from the given start
         to the given end
@@ -842,7 +846,7 @@ class ModelTrainer():
                 
                 else: #Exploitting
                     
-                    current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                    current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
                     predicted = self.models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                     action = np.argmax(predicted) 
                     action += 1
@@ -944,7 +948,7 @@ class ModelTrainer():
             current_state = env.get_current_state()
             base_money.append(1000 * (env.get_current_stock_price() / base_price))
 
-            current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+            current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
             predicted = self.models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
             action = np.argmax(predicted) 
             action += 1
@@ -1080,7 +1084,7 @@ class ModelTrainer():
                 action = env.get_random_action() # Just randomly choosing an action
             
             else: #Exploitting
-                current_reshaped = np.array(current_state).reshape([1, np.array(current_state).shape[0]])
+                current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
                 predicted = self.models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
                 action = np.argmax(predicted) 
                 action += 1
@@ -1309,7 +1313,7 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
             env = TrainingEnviroment(chunks, closing_prices, minute_interval)
 
-            trainer_model.train_from_save(env, iteration, f"models/13T/model_{ver}_{iteration}", f"models/13T/target_model_{ver}_{iteration}", f"models/13T/replay_mem_{ver}_{iteration}.pkl", epsilon, decay, ver, max_it)
+            trainer_model.train_from_save(env, iteration, f"models/{ver}/model_{ver}_{iteration}", f"models/{ver}/target_model_{ver}_{iteration}", f"models/{ver}/replay_mem_{ver}_{iteration}.pkl", epsilon, decay, ver, max_it)
         
         elif choice == 3:
 
@@ -1321,11 +1325,11 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
 
             results = 0
-            for i in tqdm(range(2)):
+            for i in tqdm(range(3)):
                 env = TrainingEnviroment(chunks, closing_prices, minute_interval)
                 results += trainer_model.test(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
-            print("average: " + str(results/(2)))
+            print("average: " + str(results/(3)))
         
         elif choice == 4:
             
@@ -1337,11 +1341,11 @@ def main():
             chunks, closing_prices = trainer_model.create_training_chunks(minute_interval)
 
             results = 0
-            for i in tqdm(range(1)):
+            for i in tqdm(range(3)):
                 env = TrainingEnviroment(chunks, closing_prices, minute_interval)
                 results += trainer_model.test_v2(env, f"models/{ver}/model_{ver}_{it}", f"models/{ver}/target_model_{ver}_{it}", f"models/{ver}/replay_mem_{ver}_{it}.pkl", ver)
 
-            print("average: " + str(results/(1)))
+            print("average: " + str(results/(3)))
 
 
         elif choice == 5:
@@ -1350,7 +1354,7 @@ def main():
             it = input("Please enter the iteration number: \n")
 
             trainer_model = ModelTrainer()
-            trainer_model.test_trend_analysis(ver)
+            trainer_model.trend_analysis(ver, it)
 
     elif len(sys.argv) == 4:
 
