@@ -48,10 +48,10 @@ class Model():
         # Has max model size
         model = keras.Sequential()
 
-        model.add(LSTM(175, input_shape=state_shape, activation='relu', return_sequences=True))
+        model.add(LSTM(250, input_shape=state_shape, activation='relu', return_sequences=True))
         model.add(keras.layers.Dropout(0.25))
 
-        model.add(LSTM(90, activation='relu', return_sequences=True))
+        model.add(LSTM(180, activation='relu', return_sequences=True))
         model.add(keras.layers.Dropout(0.2))
 
         model.add(keras.layers.Dense(action_shape, activation='softmax'))
@@ -106,7 +106,7 @@ class Model():
 
         for i in range(len(new_current_states)):
             new_current_state = np.array(new_current_states[i]).reshape([1, 1, len(new_current_states[i])])
-            future_qs_list.append(list(self.model.predict(new_current_state).flatten()))
+            future_qs_list.append(list(self.target_model.predict(new_current_state).flatten()))
 
         X = []
         Y = []
