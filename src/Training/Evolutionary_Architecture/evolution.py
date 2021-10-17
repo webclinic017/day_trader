@@ -11,6 +11,17 @@ from model import Model
 import model_trainer
 from training_enviroment import TrainingEnviroment
 
+def get_new_folder(completed_folders: list):
+
+    folders = os.listdir("models")
+
+    for folder in folders:
+
+        if folder not in completed_folders and "test" in str(folder):
+            completed_folders.append(folder)
+            return folder
+    
+    return None
 
 def live_graph():
     
@@ -18,60 +29,72 @@ def live_graph():
     x = []
     monies = []
 
-    figure, axis = plt.subplots(4, 4)
+    figure, axis = plt.subplots(2, 4)
     count = 0
+
+    folders = os.listdir("models")
+    folders = filter(lambda name: "test" in name, folders)
+    folders.sort(key=lambda x: os.path.getmtime(f"models/{x}"))
+    folders = folders[-9:-1]
 
 
     while(True):
 
-        if os.path.isfile(f"models/{ver}/monies.pkl"):
-            
-            with open(f"models/{ver}/monies.pkl", "rb") as f:
-                monies = pickle.load(f)
-
-            x = list(range(len(monies)))
-
-            pos_signal = monies.copy()
-            neg_signal = monies.copy()
-
-            pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-            neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-
-            
-            axis[0, 0].plot(x, monies, color='black')
-            axis[0, 0].scatter(x, pos_signal, color='g', s=20)
-            axis[0, 0].scatter(x, neg_signal, color='r', s=20)
-            axis[0, 0].set_title(" 0, 0")
-            
-            axis[1, 0].plot(x, monies, color='black')
-            axis[1, 0].scatter(x, pos_signal, color='g', s=20)
-            axis[1, 0].scatter(x, neg_signal, color='r', s=20)
-            axis[1, 0].set_title(" 1, 0")
-            
-            axis[0, 1].plot(x, monies, color='black')
-            axis[0, 1].scatter(x, pos_signal, color='g', s=20)
-            axis[0, 1].scatter(x, neg_signal, color='r', s=20)
-            axis[0, 1].set_title(" 0, 1")
         
-            axis[0, 2].plot(x, monies, color='black')
-            axis[0, 2].scatter(x, pos_signal, color='g', s=20)
-            axis[0, 2].scatter(x, neg_signal, color='r', s=20)
-            axis[0, 2].set_title(" 0, 2")
+            
+        with open(f"models/{ver}/monies.pkl", "rb") as f:
+            monies = pickle.load(f)
+
+        x = list(range(len(monies)))
+
+        pos_signal = monies.copy()
+        neg_signal = monies.copy()
+
+        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
+        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
+
         
-            axis[1, 2].plot(x, monies, color='black')
-            axis[1, 2].scatter(x, pos_signal, color='g', s=20)
-            axis[1, 2].scatter(x, neg_signal, color='r', s=20)
-            axis[1, 2].set_title(" 1, 2")
+        axis[0, 0].plot(x, monies, color='black')
+        axis[0, 0].scatter(x, pos_signal, color='g', s=20)
+        axis[0, 0].scatter(x, neg_signal, color='r', s=20)
+        axis[0, 0].set_title("0, 0")
         
-            axis[1, 1].plot(x, monies, color='black')
-            axis[1, 1].scatter(x, pos_signal, color='g', s=20)
-            axis[1, 1].scatter(x, neg_signal, color='r', s=20)
-            axis[1, 1].set_title("1, 1")
+        axis[0, 1].plot(x, monies, color='black')
+        axis[0, 1].scatter(x, pos_signal, color='g', s=20)
+        axis[0, 1].scatter(x, neg_signal, color='r', s=20)
+        axis[0, 1].set_title("0, 1")
+        
+        axis[0, 2].plot(x, monies, color='black')
+        axis[0, 2].scatter(x, pos_signal, color='g', s=20)
+        axis[0, 2].scatter(x, neg_signal, color='r', s=20)
+        axis[0, 2].set_title("0, 2")
+    
+        axis[0, 3].plot(x, monies, color='black')
+        axis[0, 3].scatter(x, pos_signal, color='g', s=20)
+        axis[0, 3].scatter(x, neg_signal, color='r', s=20)
+        axis[0, 3].set_title("0, 3")
+    
+        axis[1, 0].plot(x, monies, color='black')
+        axis[1, 0].scatter(x, pos_signal, color='g', s=20)
+        axis[1, 0].scatter(x, neg_signal, color='r', s=20)
+        axis[1, 0].set_title("1, 0")
 
-            plt.pause(0.5)
+        axis[1, 1].plot(x, monies, color='black')
+        axis[1, 1].scatter(x, pos_signal, color='g', s=20)
+        axis[1, 1].scatter(x, neg_signal, color='r', s=20)
+        axis[1, 1].set_title("1, 1")
+        
+        axis[1, 2].plot(x, monies, color='black')
+        axis[1, 2].scatter(x, pos_signal, color='g', s=20)
+        axis[1, 2].scatter(x, neg_signal, color='r', s=20)
+        axis[1, 2].set_title("1, 2")
+    
+        axis[1, 3].plot(x, monies, color='black')
+        axis[1, 3].scatter(x, pos_signal, color='g', s=20)
+        axis[1, 3].scatter(x, neg_signal, color='r', s=20)
+        axis[1, 3].set_title("1, 3")
 
-
-
+        plt.pause(0.5)
         time.sleep(1)
 
 class Evolution:
