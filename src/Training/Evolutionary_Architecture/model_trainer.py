@@ -192,7 +192,6 @@ def create_training_chunks(minute_interval: int):
 
     if os.path.isfile("cache/SPY_prices.pkl"):
         
-        print("in here")
         with open("cache/SPY_prices.pkl", "rb") as f:
             SPY_prices =  pickle.load(f)
         with open("cache/VTI_prices.pkl", "rb") as f:
@@ -214,7 +213,6 @@ def create_training_chunks(minute_interval: int):
 
     else:
         
-        print("in here 2")
         api = tradeapi.REST()
         start_date = date(2018, 8, 26)
         end_date = date(2021, 8, 26)
@@ -282,25 +280,21 @@ def create_training_chunks(minute_interval: int):
         with open("cache/BND_vol.pkl", 'wb') as f:
             pickle.dump(BND_vol, f)
 
-    print("in here 3")
     SPY_prices, SPY_closing_prices = make_stationary(SPY_prices, minute_interval, True)
     VTI_prices = make_stationary(VTI_prices, minute_interval)
     VXUS_prices = make_stationary(VXUS_prices, minute_interval)
     BND_prices = make_stationary(BND_prices, minute_interval)
 
-    print("in here 4")
     SPY_vol = make_stationary(SPY_vol, minute_interval)
     VTI_vol = make_stationary(VTI_vol, minute_interval)
     VXUS_vol = make_stationary(VXUS_vol, minute_interval)
     BND_vol = make_stationary(BND_vol, minute_interval)
 
-    print("in here 5")
     price_chunks = [VTI_prices, VXUS_prices, BND_prices]
     vol_chunks = [VTI_vol, VXUS_vol, BND_vol]
 
     total_chunks = combine_chunks(price_chunks, vol_chunks, SPY_prices, SPY_vol)
 
-    print("in here 6")
     return total_chunks, SPY_closing_prices
     
 def segment_chunks(chunks_by_days: dict) -> list:
@@ -595,6 +589,9 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
         None
     """
 
+    if not os.path.exists(f'models/{ver}'):
+        os.makedirs(f'models/{ver}')
+
     epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
@@ -612,6 +609,9 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
     replay_memory = deque(maxlen=100_000)
     chunks, closing_prices = create_training_chunks(60) 
     env = TrainingEnviroment(chunks, closing_prices, 60)
+
+    with open(f"models/{ver}/architecture.pkl", 'wb') as f:
+        pickle.dump(model_config, f)
 
     for i in tqdm(range(training_iterations)):
         
@@ -670,7 +670,6 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
         total_segment_reward = 0
 
         save_state(models.model, models.target_model, (episode-1), replay_memory, X, y, max_profits, ver)
-    
               
 def train_from_save(env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int, max_it: int):
     """ Overal model controller for the model and the training enviroments. 
@@ -803,13 +802,6 @@ def test_v2(version: str, shared_dict: dict) -> None:
     chunks, closing_prices = create_training_chunks(60) 
     env = TrainingEnviroment(chunks, closing_prices, 60)
 
-    total_length = int(len(env.chunks)/3)
-    overal_done = False
-
-    current_money = []
-    iteration = []
-    action_list = []
-
     models = Model()
 
     models.model = keras.models.load_model(f"models/{version}/model_{version}")
@@ -817,107 +809,57 @@ def test_v2(version: str, shared_dict: dict) -> None:
     with open(f"models/{version}/model_{version}", 'rb') as f:
         replay_memory = pickle.load(f)
     
-    i = 0
-    env.load_year_test()
-    base_money = []
-
-    total_buy_positions = []
-    total_sell_positions = []
-
-    weekly_buy_positions = {}
-    weekly_sell_positions = {}
-
-    total_profit = []
-    base_price = env.get_current_stock_price()
     money_made = 0
     
 
-    while(not overal_done):
+    for i in range(3):
         
-        done = False
-        steps_to_update_target_model = 0
-        
-        steps_to_update_target_model += 1 
-        random_number = np.random.rand()
-        current_state = env.get_current_state()
-        base_money.append(1000 * (env.get_current_stock_price() / base_price))
+        overal_done = False
+        env.load_year_test()
 
-        current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
-        predicted = models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
-        action = np.argmax(predicted) 
-        action += 1
-        
-        action_list.append(action)
-
-        if action == 1 and env.curr_money > 100 and len(env.buy_prices) < 10:
-            weekly_buy_positions[i] = list(predicted)
-        
-        elif action == 3 and env.buy_prices:
-            weekly_sell_positions[i] = list(predicted)
+        while(not overal_done):
             
-        reward, weekly_done, overal_done = env.test_step_v2(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            done = False
+            current_state = env.get_current_state()
 
-        new_state = current_state               
-        new_state[-2] = env.num_chunks
-        new_state[-3] = env.curr_money
-        
-        index = -4
-        for k in range(9,-1,-1):
+            current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
+            predicted = models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
+            action = np.argmax(predicted) 
+            action += 1
+            
+                
+            reward, weekly_done, overal_done = env.test_step_v2(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
 
-            try:
-                new_state[index] = np.log(env.buy_prices[k])
-            except:
-                new_state[index] = 0
-            index -= 1
+            new_state = current_state               
+            new_state[-2] = env.num_chunks
+            new_state[-3] = env.curr_money
+            
+            index = -4
+            for k in range(9,-1,-1):
 
-        replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
+                try:
+                    new_state[index] = np.log(env.buy_prices[k])
+                except:
+                    new_state[index] = 0
+                index -= 1
 
-
-        print(f"Current money =  ${env.get_current_money()*1} -  it number: {i} / {total_length} - epsilon: {epsilon}")
-        current_money.append(env.get_current_money()*1)
-        iteration.append(i)
-        i += 1
-
-        if weekly_done:
-            print(f"We didn't meet goal profit, made it to: {env.get_current_money()*1} , should have made it to: {env.goal_profit*1}")
-            money_made += (env.get_current_money()*1) - 1000
-            print(f"Current made money: {money_made}")
-
-            total_buy_positions.append(weekly_buy_positions)
-            total_sell_positions.append(weekly_sell_positions)
-
-            weekly_buy_positions = {}
-            weekly_sell_positions = {}
-
-            total_profit.append(env.get_current_money() - 1000)
-
-            env.goal_profit = 1000 * env.weekly_return()
-            env.curr_money = 1000
-            env.buy_prices = []
-            env.prev_money = 1000
-            env.max_profit = 1000
-            env.num_chunks = 0
+            replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
 
+            if weekly_done:
+                print(f"We didn't meet goal profit, made it to: {env.get_current_money()*1} , should have made it to: {env.goal_profit*1}")
+                money_made += (env.get_current_money()*1) - 1000
+                print(f"Current made money: {money_made}")
+
+                env.goal_profit = 1000 * env.weekly_return()
+                env.curr_money = 1000
+                env.buy_prices = []
+                env.prev_money = 1000
+                env.max_profit = 1000
+                env.num_chunks = 0
 
 
-    
-    with open(f"models/results/current_money_{version}.pkl", 'wb') as f:
-        pickle.dump(current_money, f)
-    with open(f"models/results/total_buy_pos_{version}.pkl", 'wb') as f:
-        pickle.dump(total_buy_positions, f)
-    with open(f"models/results/total_sell_pos_{version}.pkl", 'wb') as f:
-        pickle.dump(total_sell_positions, f)
-    with open(f"models/results/total_profit_{version}.pkl", 'wb') as f:
-        pickle.dump(total_profit, f)
-    with open(f"models/results/base_money_{version}.pkl", 'wb') as f:
-        pickle.dump(base_money, f)
-    with open(f"models/results/iteration_{version}.pkl", 'wb') as f:
-        pickle.dump(iteration, f)
-    with open(f"models/results/action_list_{version}.pkl", 'wb') as f:
-        pickle.dump(action_list, f)
-
-    shared_dict[version].append(money_made)
+    shared_dict[version].append(int(money_made/3))
     
 def test(version: str, shared_dict: dict) -> None:
     """ Overal model controller for the model and the training enviroments. 
@@ -946,96 +888,57 @@ def test(version: str, shared_dict: dict) -> None:
 
     chunks, closing_prices = create_training_chunks(60) 
     env = TrainingEnviroment(chunks, closing_prices, 60)
-    
-    total_length = int(len(env.chunks)/3)
-    done = False
 
-    current_money = []
-    iteration = []
-    action_list = []
 
     models = Model()
+    total_money = 0
 
     models.model = keras.models.load_model(f"models/{version}/model_{version}")
     models.target_model = keras.models.load_model(f"models/{version}/target_model_{version}") # Making neural net with input layer equal to state space size, and output layer equal to action space size
     with open(f"models/{version}/replay_mem_{version}", 'rb') as f:
         replay_memory = pickle.load(f)
-    
-    i = 0
-    env.load_year_test()
-    base_money = []
-    buy_positions = []
-    sell_positions = []
-    base_price = env.get_current_stock_price()
+  
 
-
-    while(not done):
+    for i in range(3):
         
         done = False
-        steps_to_update_target_model = 0
-        
-        steps_to_update_target_model += 1 
-        random_number = np.random.rand()
-        current_state = env.get_current_state()
-        base_money.append(1000 * (env.get_current_stock_price() / base_price))
+        env.load_year_test()
 
-        if random_number <= epsilon:  # Explore  
-            action = env.get_random_action() # Just randomly choosing an action
-        
-        else: #Exploitting
+
+        while(not done):
+            
+            done = False
+            steps_to_update_target_model = 0
+            
+            steps_to_update_target_model += 1 
+            random_number = np.random.rand()
+            current_state = env.get_current_state()
+
             current_reshaped = np.array(current_state).reshape([1, 1, len(current_state)])
             predicted = models.model.predict(current_reshaped).flatten()           # Predicting best action, not sure why flatten (pushing 2d into 1d)
             action = np.argmax(predicted) 
             action += 1
+                
+            reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+
+            new_state = current_state               
+            new_state[-2] = env.num_chunks
+            new_state[-3] = env.get_current_money()
             
-        action_list.append(action)
-        
-        if action == 1:
-            buy_positions.append(i)
-        elif action == 3:
-            sell_positions.append(i)
-            
-        reward, done = env.test_step(action, current_state, epsilon)      # Executing action on current state and getting reward, this also increments out current state
+            index = -4
+            for k in range(9,-1,-1):
 
-        new_state = current_state               
-        new_state[-2] = env.num_chunks
-        new_state[-3] = env.get_current_money()
-        
-        index = -4
-        for k in range(9,-1,-1):
+                try:
+                    new_state[index] = np.log(env.buy_prices[k])
+                except:
+                    new_state[index] = 0
+                index -= 1
 
-            try:
-                new_state[index] = np.log(env.buy_prices[k])
-            except:
-                new_state[index] = 0
-            index -= 1
+            replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
-        replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
-
-
-        print(f"Current money =  ${env.get_current_money()} -  it number: {i} / {total_length} - epsilon: {epsilon}")
-        current_money.append(env.get_current_money())
-        iteration.append(i)
-        i += 1
+        total_money += env.get_current_money()
     
-    with open(f"models/results/current_money_{version}.pkl", 'wb') as f:
-        pickle.dump(current_money, f)
-    with open(f"models/results/buy_pos_{version}.pkl", 'wb') as f:
-        pickle.dump(buy_positions, f)
-    with open(f"models/results/sell_pos_{version}.pkl", 'wb') as f:
-        pickle.dump(sell_positions, f)
-    with open(f"models/results/base_money_{version}.pkl", 'wb') as f:
-        pickle.dump(base_money, f)
-    with open(f"models/results/iteration_{version}.pkl", 'wb') as f:
-        pickle.dump(iteration, f)
-    with open(f"models/results/action_list_{version}.pkl", 'wb') as f:
-        pickle.dump(action_list, f)
-    
-    if env.get_current_money() < 1000:
-        print("How")
-        print(env.get_current_money())
-
-    shared_dict[version].append(env.get_current_money())
+    shared_dict[version].append(int(total_money/3))
 
 def trend_analysis(ver: str, it: str) -> None:
     """ Takes the currnet data files for iterations and prices from

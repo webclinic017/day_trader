@@ -78,7 +78,8 @@ class TrainingEnviroment:
         Side Effects:
             None
         """
-
+        
+        self.reset()
         self.curr_chunk = len(self.chunks) - int(len(self.chunks)/3)        # setting initial to 2/3 the way through 3 years
 
     def reset(self) -> None:

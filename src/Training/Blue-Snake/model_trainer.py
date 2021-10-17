@@ -5,20 +5,83 @@ from collections import deque
 import random
 import alpaca_trade_api as tradeapi
 from datetime import date, datetime, timedelta
-import matplotlib.pyplot as plt
 import pickle
 import os.path
 import os
 from tqdm import tqdm
 import pandas as pd
+import multiprocessing as mp
 from sklearn.linear_model import LinearRegression
-from matplotlib import pyplot as plt
 import shutil
 import matplotlib.pyplot as plt
 from dateutil import parser
 from training_enviroment import TrainingEnviroment
 import sys
 from model import Model
+import time
+import threading
+
+def live_graph():
+    
+    ver = "60d"
+    x = []
+    monies = []
+
+    figure, axis = plt.subplots(2, 3)
+    count = 0
+
+
+    while(True):
+
+        if os.path.isfile(f"models/{ver}/monies.pkl"):
+            
+            with open(f"models/{ver}/monies.pkl", "rb") as f:
+                monies = pickle.load(f)
+
+            x = list(range(len(monies)))
+
+            pos_signal = monies.copy()
+            neg_signal = monies.copy()
+
+            pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
+            neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
+
+            
+            axis[0, 0].plot(x, monies, color='black')
+            axis[0, 0].scatter(x, pos_signal, color='g', s=20)
+            axis[0, 0].scatter(x, neg_signal, color='r', s=20)
+            axis[0, 0].set_title(" 0, 0")
+            
+            axis[1, 0].plot(x, monies, color='black')
+            axis[1, 0].scatter(x, pos_signal, color='g', s=20)
+            axis[1, 0].scatter(x, neg_signal, color='r', s=20)
+            axis[1, 0].set_title(" 1, 0")
+            
+            axis[0, 1].plot(x, monies, color='black')
+            axis[0, 1].scatter(x, pos_signal, color='g', s=20)
+            axis[0, 1].scatter(x, neg_signal, color='r', s=20)
+            axis[0, 1].set_title(" 0, 1")
+        
+            axis[0, 2].plot(x, monies, color='black')
+            axis[0, 2].scatter(x, pos_signal, color='g', s=20)
+            axis[0, 2].scatter(x, neg_signal, color='r', s=20)
+            axis[0, 2].set_title(" 0, 2")
+        
+            axis[1, 2].plot(x, monies, color='black')
+            axis[1, 2].scatter(x, pos_signal, color='g', s=20)
+            axis[1, 2].scatter(x, neg_signal, color='r', s=20)
+            axis[1, 2].set_title(" 1, 2")
+        
+            axis[1, 1].plot(x, monies, color='black')
+            axis[1, 1].scatter(x, pos_signal, color='g', s=20)
+            axis[1, 1].scatter(x, neg_signal, color='r', s=20)
+            axis[1, 1].set_title("1, 1")
+
+            plt.pause(0.5)
+
+
+
+        time.sleep(1)
 
 class ModelTrainer():
 
@@ -782,7 +845,7 @@ class ModelTrainer():
             total_segment_reward = 0
 
             self.save_state(self.models.model, self.models.target_model, (episode-1), replay_memory, X, y, max_profits, ver)
-                    
+        
     def train_from_save(self, env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int, max_it: int):
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
@@ -812,6 +875,8 @@ class ModelTrainer():
             None
         """
 
+        
+
         max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
         min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
         episode = iteration
@@ -827,12 +892,15 @@ class ModelTrainer():
             replay_memory = pickle.load(f)
 
 
-
         for i in tqdm(range(max_it - iteration)):
+
+            p = mp.Process(target=live_graph, args=())
+            p.start()
 
             done = False
             steps_to_update_target_model = 0
             env.reset()
+            monies = []
 
             while(not done):
 
@@ -869,15 +937,21 @@ class ModelTrainer():
 
                 replay_memory.append([current_state, action, reward, new_state, done])      # Adding everything to the replay memory
 
+                monies.append(env.get_current_money())
+                with open(f"models/{ver}/monies.pkl", 'wb') as f:
+                    pickle.dump(monies, f)
+
                 # 3. Update the Main Network using the Bellman Equation
                 if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                     self.models.train(replay_memory, done)            # training the main model
-                    
+                
+                
             
             episode += 1
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
             self.models.target_model.set_weights(self.models.model.get_weights())
 
+            
             print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
             X.append(len(X) + 1)
             max_profits.append(env.max_profit)
@@ -885,7 +959,10 @@ class ModelTrainer():
             total_segment_reward = 0
 
             self.save_state(self.models.model, self.models.target_model, episode, replay_memory, X, y, max_profits, ver)
+            
+            p.terminate()
 
+    
     def test_v2(self, env: TrainingEnviroment, model_name: str, target_model_name: str, replay_mem_name: str, ver: int) -> None:
         """ Overal model controller for the model and the training enviroments. 
         Controls the flow of inforamtion and helps simulate realtime data extraction
