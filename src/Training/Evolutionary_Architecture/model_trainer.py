@@ -19,6 +19,7 @@ from dateutil import parser
 from training_enviroment import TrainingEnviroment
 import sys
 from model import Model
+import time
 import multiprocessing as mp
 import model
 
@@ -572,7 +573,7 @@ def save_state( model: object, target_model: object, it_num: int, replay_mem: de
         os.remove(f"models/{ver}/Y_{ver}_{it_num-1}.pkl")
         os.remove(f"models/{ver}/max_profits_{ver}_{it_num-1}.pkl")
     
-def simulate(decay: float, ver: int, training_iterations: int, model_config: list) -> None:
+def simulate(decay: float, ver: int, training_iterations: int, model_config: list, live_data: dict) -> None:
     """ Overal model controller for the model and the training enviroments. 
     Controls the flow of inforamtion and helps simulate realtime data extraction
     for the model to learn on. Gives the model the current states, exectutes the action,
@@ -587,8 +588,17 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
     
     Side Effects:
         None
-    """
+    """ 
 
+    index = -1
+    
+    for it in live_data:
+        
+        if not live_data[it][0]:
+            index = it
+            break
+    
+    live_data[index][1] = ver
     if not os.path.exists(f'models/{ver}'):
         os.makedirs(f'models/{ver}')
 
@@ -658,7 +668,11 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
             if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                 models.train(replay_memory, done)            # training the main model
                     
-            
+            live_data[index][0].append(env.get_current_money())
+        
+        live_data[index][0] = []
+        time.sleep(3)
+
         episode += 1
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
         models.target_model.set_weights(models.model.get_weights())
