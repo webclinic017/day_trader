@@ -10,6 +10,8 @@ from datetime import date, timedelta
 from dateutil import parser
 import logging
 import ecs_logging
+import ast
+import sys
 
 
 class LiveEnviroment():
@@ -123,8 +125,13 @@ class LiveEnviroment():
         """
 
 
-
-        message = eval(message)             # Security risk - Fix later
+        if sys.getsizeof(message) < 10000:
+            message = ast.literal_eval(message)
+        
+        else:
+            self.logger.info("update_prices", extra={"http.request.body.content": f"Price message was too big, not evaluating"})
+            return
+            
 
         self.logger.info("update_prices", extra={"http.request.body.content": f"Got new price: {message}"})
 
