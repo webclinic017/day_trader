@@ -669,7 +669,6 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
         monies = []
         with open(f"models/{ver}/monies.pkl", 'wb') as f:
             pickle.dump(monies, f)
-        
         time.sleep(3)
             
 
@@ -685,6 +684,11 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
         total_segment_reward = 0
 
         save_state(models.model, models.target_model, (episode-1), replay_memory, X, y, max_profits, ver)
+    
+    monies = [-1]
+    with open(f"models/{ver}/monies.pkl", 'wb') as f:
+        pickle.dump(monies, f)
+    time.sleep(3)
               
 def train_from_save(env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int, max_it: int):
     """ Overal model controller for the model and the training enviroments. 

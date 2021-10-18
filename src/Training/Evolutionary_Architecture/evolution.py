@@ -14,26 +14,36 @@ from training_enviroment import TrainingEnviroment
 
 # Replace with negative one in shared dict on the training side, so the new process knows to index into there
 
-def live_graph(shared_dict: dict):
+def find_new_folder(completed: list):
+
+    all_folders = list(os.listdir("models"))
+    all_folders = [x for x in all_folders if "test" in str(x)]
+
+    for folder in all_folders:
+        
+        if folder not in completed:
+            completed.append(folder)
+            return folder
+    
+    return ""
+
+
+
+def live_graph():
     
 
     figure, axis = plt.subplots(2, 4)
-    count = 0
-
-    all_folders = list(os.listdir("models"))
-    all_folders.sort(key=lambda x: os.path.getmtime(f"models/{x}"))
-    all_folders = [x for x in all_folders if "test" in str(x)]
-    all_folders = all_folders[-8:]
+    completed = []
 
     folders = {
-        0: all_folders[0],
-        1: all_folders[1],
-        2: all_folders[2],
-        3: all_folders[3],
-        4: all_folders[4],
-        5: all_folders[5],
-        6: all_folders[6],
-        7: all_folders[7]
+        0: find_new_folder(completed),
+        1: find_new_folder(completed),
+        2: find_new_folder(completed),
+        3: find_new_folder(completed),
+        4: find_new_folder(completed),
+        5: find_new_folder(completed),
+        6: find_new_folder(completed),
+        7: find_new_folder(completed)
     }
 
     f_axis = {
@@ -47,16 +57,22 @@ def live_graph(shared_dict: dict):
         7: (1, 3)
     }
 
-    
-
     while(True):
 
         
         for i in range(8):
+            
+            if not folders[i]:
+                folders[i] = find_new_folder(completed)
+                continue
 
-            with open(folders[0], 'rb') as f:
-                y = pickle.load(f)
+            with open(folders[i], 'rb') as f:
+                y = list(pickle.load(f))
             x = list(range(len(y)))
+
+            if -1 in y:
+                folders[i] = find_new_folder(completed)
+                continue
 
             pos_signal = y.copy()
             neg_signal = y.copy()
@@ -82,8 +98,6 @@ class Evolution:
     model_performance: dict
     average_performance: list
 
-    live_data: list
-
     current_gen: int
 
     max_first: int
@@ -101,10 +115,6 @@ class Evolution:
         self.pop_size = 90
         self.population = []
         self.model_performance = mp.Manager().list()
-
-        self.live_data = mp.Manager().dict()
-        for i in range(8):
-            self.live_data.append[[], "Empty"]
 
         for i in range(90):
             first = random.randint(int(max_first*0.1), max_first)
@@ -151,7 +161,7 @@ class Evolution:
         
 
         for i in range(len(self.population)):
-            #model_trainer.simulate(0.01, f"test_{self.current_gen}_{i}", 100, self.population[i], self.live_data)
+            #model_trainer.simulate(0.01, f"test_{self.current_gen}_{i}", 100, self.population[i])
             
             self.model_performance[f"test_{self.current_gen}_{i}"] = []
             pool.apply_async(
@@ -165,7 +175,7 @@ class Evolution:
                     )
             
             
-        p = mp.Process(target=live_graph, args=(self.live_data, ))
+        p = mp.Process(target=live_graph, args=())
         p.start()
 
         pool.close()
