@@ -32,6 +32,7 @@ def find_new_folder(completed: list):
 def live_graph():
     
 
+    print("In here")
     figure, axis = plt.subplots(2, 4)
     completed = []
 
@@ -59,34 +60,30 @@ def live_graph():
 
     while(True):
 
-        
         for i in range(8):
             
             if not folders[i]:
                 folders[i] = find_new_folder(completed)
                 continue
 
-            with open(folders[i], 'rb') as f:
+            with open(f"models/{folders[i]}/Y.pkl", 'rb') as f:
                 y = list(pickle.load(f))
+            with open(f"models/{folders[i]}/max_profits.pkl", 'rb') as f:
+                y_max = list(pickle.load(f))
             x = list(range(len(y)))
+
+            print(folders[i] + ": " + str(y))
 
             if -1 in y:
                 folders[i] = find_new_folder(completed)
+                # Reset the plot somehow 
                 continue
 
-            pos_signal = y.copy()
-            neg_signal = y.copy()
-
-            pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-            neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-
-            axis[f_axis[i][0], f_axis[i][1]].plot(x, y, color='black')
-            axis[f_axis[i][0], f_axis[i][1]].scatter(x, pos_signal, color='g', s=20)
-            axis[f_axis[i][0], f_axis[i][1]].scatter(x, neg_signal, color='r', s=20)
+            axis[f_axis[i][0], f_axis[i][1]].plot(x, y, color='blue')
+            axis[f_axis[i][0], f_axis[i][1]].plot(x, y_max, color='red')
             axis[f_axis[i][0], f_axis[i][1]].set_title(folders[i])
 
-        plt.pause(0.5)
-        time.sleep(1)
+        plt.pause(1)
         
 
 class Evolution:
@@ -114,7 +111,7 @@ class Evolution:
 
         self.pop_size = 90
         self.population = []
-        self.model_performance = mp.Manager().list()
+        self.model_performance = mp.Manager().dict()
 
         for i in range(90):
             first = random.randint(int(max_first*0.1), max_first)

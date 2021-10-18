@@ -556,22 +556,20 @@ def save_state( model: object, target_model: object, it_num: int, replay_mem: de
     with open(f"models/{ver}/replay_mem_{ver}_{it_num}.pkl", 'wb') as f:
         pickle.dump(replay_mem, f)
     
-    with open(f"models/{ver}/X_{ver}_{it_num}.pkl", 'wb') as f:
+    with open(f"models/{ver}/X.pkl", 'wb') as f:
         pickle.dump(X, f)
     
-    with open(f"models/{ver}/Y_{ver}_{it_num}.pkl", 'wb') as f:
+    with open(f"models/{ver}/Y.pkl", 'wb') as f:
         pickle.dump(Y, f)
     
-    with open(f"models/{ver}/max_profits_{ver}_{it_num}.pkl", 'wb') as f:
+    with open(f"models/{ver}/max_profits.pkl", 'wb') as f:
         pickle.dump(max_profits, f)
     
     if it_num != 0:
         shutil.rmtree(f"models/{ver}/model_{ver}_{it_num-1}")
         shutil.rmtree(f"models/{ver}/target_model_{ver}_{it_num-1}")
         os.remove(f"models/{ver}/replay_mem_{ver}_{it_num-1}.pkl")
-        os.remove(f"models/{ver}/X_{ver}_{it_num-1}.pkl")
-        os.remove(f"models/{ver}/Y_{ver}_{it_num-1}.pkl")
-        os.remove(f"models/{ver}/max_profits_{ver}_{it_num-1}.pkl")
+
     
 def simulate(decay: float, ver: int, training_iterations: int, model_config: list) -> None:
     """ Overal model controller for the model and the training enviroments. 
@@ -595,6 +593,14 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
     if not os.path.exists(f'models/{ver}'):
         os.makedirs(f'models/{ver}')
 
+    with open(f"models/{ver}/Y.pkl", 'wb') as f:
+        y = [1000]
+        pickle.dump(y, f)
+
+    with open(f"models/{ver}/max_profits.pkl", 'wb') as f:
+        max_profits = [1000]
+        pickle.dump(y, f)
+
     epsilon = 1 # Epsilon-greedy algorithm in initialized at 1 meaning every step is random at the start - This decreases over time
     max_epsilon = 1 # You can't explore more than 100% of the time - Makes sense
     min_epsilon = 0.01 # At a minimum, we'll always explore 1% of the time - Optimize somehow?
@@ -603,7 +609,6 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
 
     X = []
     y = []
-    monies = []
     max_profits = []
 
     models = model.Model((model_config[0], model_config[1]))
@@ -661,23 +666,12 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
             # 3. Update the Main Network using the Bellman Equation, can maybe do this for every cpu we have and paralize the training process
             if steps_to_update_target_model % 5 == 0 or done:                   # If we've done 4 steps or have lost/won, updat the main neural net, not target
                 models.train(replay_memory, done)            # training the main model
-                    
-            monies.append(env.get_current_money())
-            with open(f"models/{ver}/monies.pkl", 'wb') as f:
-                pickle.dump(monies, f)
+
         
-        monies = []
-        with open(f"models/{ver}/monies.pkl", 'wb') as f:
-            pickle.dump(monies, f)
-        time.sleep(3)
-            
-
-
         episode += 1
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
         models.target_model.set_weights(models.model.get_weights())
 
-        print(f"Made it to ${env.get_current_money()} - Max Money: {env.max_profit} -  it number: {i} - epsilon: {epsilon}")
         X.append(len(X) + 1)
         max_profits.append(env.max_profit)
         y.append(env.get_current_money())
@@ -685,10 +679,10 @@ def simulate(decay: float, ver: int, training_iterations: int, model_config: lis
 
         save_state(models.model, models.target_model, (episode-1), replay_memory, X, y, max_profits, ver)
     
-    monies = [-1]
-    with open(f"models/{ver}/monies.pkl", 'wb') as f:
-        pickle.dump(monies, f)
-    time.sleep(3)
+    with open(f"models/{ver}/Y.pkl", 'wb') as f:
+        y.append(-1)
+        pickle.dump(y, f)
+    
               
 def train_from_save(env: TrainingEnviroment, iteration: int, model_name: str, target_model_name: str, replay_mem_name: str, epsilon: float, decay: int, ver: int, max_it: int):
     """ Overal model controller for the model and the training enviroments. 
