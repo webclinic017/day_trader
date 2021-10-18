@@ -49,8 +49,6 @@ class Model():
         Side Effects:
             None
         """
-        print(first_layer)
-        print(second_layer)
 
         model = keras.Sequential()
 

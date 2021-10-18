@@ -1,5 +1,6 @@
 import random
 import multiprocessing as mp
+from multiprocessing import Process
 import os
 import operator
 import numpy as np
@@ -19,115 +20,54 @@ def live_graph(shared_dict: dict):
     figure, axis = plt.subplots(2, 4)
     count = 0
 
-    folders = []
+    all_folders = list(os.listdir("models"))
+    all_folders.sort(key=lambda x: os.path.getmtime(f"models/{x}"))
+    all_folders = [x for x in all_folders if "test" in str(x)]
+    all_folders = all_folders[-8:]
+
+    folders = {
+        0: all_folders[0],
+        1: all_folders[1],
+        2: all_folders[2],
+        3: all_folders[3],
+        4: all_folders[4],
+        5: all_folders[5],
+        6: all_folders[6],
+        7: all_folders[7]
+    }
+
+    f_axis = {
+        0: (0, 0),
+        1: (0, 1),
+        2: (0, 2),
+        3: (0, 3),
+        4: (1, 0),
+        5: (1, 1),
+        6: (1, 2),
+        7: (1, 3)
+    }
+
+    
 
     while(True):
 
-
-        x_0_0 = list(range(len(shared_dict[0][0])))
-
-        pos_signal = shared_dict[0][0].copy()
-        neg_signal = shared_dict[0][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-
         
-        axis[0, 0].plot(x_0_0, shared_dict[0][0], color='black')
-        axis[0, 0].scatter(x_0_0, pos_signal, color='g', s=20)
-        axis[0, 0].scatter(x_0_0, neg_signal, color='r', s=20)
-        axis[0, 0].set_title(shared_dict[0][1])
+        for i in range(8):
 
-        x_0_1 = list(range(len(shared_dict[1][0])))
+            with open(folders[0], 'rb') as f:
+                y = pickle.load(f)
+            x = list(range(len(y)))
 
-        pos_signal = shared_dict[1][0].copy()
-        neg_signal = shared_dict[1][0].copy()
+            pos_signal = y.copy()
+            neg_signal = y.copy()
 
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-        
-        axis[0, 1].plot(x_0_1, shared_dict[1][0], color='black')
-        axis[0, 1].scatter(x_0_1, pos_signal, color='g', s=20)
-        axis[0, 1].scatter(x_0_1, neg_signal, color='r', s=20)
-        axis[0, 1].set_title(shared_dict[1][1])
+            pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
+            neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
 
-        x_0_2 = list(range(len(shared_dict[2][0])))
-
-        pos_signal = shared_dict[2][0].copy()
-        neg_signal = shared_dict[2][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-        
-        axis[0, 2].plot(x_0_2, shared_dict[2][0], color='black')
-        axis[0, 2].scatter(x_0_2, pos_signal, color='g', s=20)
-        axis[0, 2].scatter(x_0_2, neg_signal, color='r', s=20)
-        axis[0, 2].set_title(shared_dict[2][1])
-
-        x_0_3 = list(range(len(shared_dict[3][0])))
-
-        pos_signal = shared_dict[3][0].copy()
-        neg_signal = shared_dict[3][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-    
-        axis[0, 3].plot(x_0_3, shared_dict[3][0], color='black')
-        axis[0, 3].scatter(x_0_3, pos_signal, color='g', s=20)
-        axis[0, 3].scatter(x_0_3, neg_signal, color='r', s=20)
-        axis[0, 3].set_title(shared_dict[3][1])
-
-        x_1_0 = list(range(len(shared_dict[4][0])))
-
-        pos_signal = shared_dict[4][0].copy()
-        neg_signal = shared_dict[4][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-    
-        axis[1, 0].plot(x_1_0, shared_dict[3][1], color='black')
-        axis[1, 0].scatter(x_1_0, pos_signal, color='g', s=20)
-        axis[1, 0].scatter(x_1_0, neg_signal, color='r', s=20)
-        axis[1, 0].set_title(shared_dict[4][1].copy())
-
-        x_1_1 = list(range(len(shared_dict[5][0])))
-
-        pos_signal = shared_dict[5][0].copy()
-        neg_signal = shared_dict[5][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-
-        axis[1, 1].plot(x_1_1, shared_dict[5][0], color='black')
-        axis[1, 1].scatter(x_1_1, pos_signal, color='g', s=20)
-        axis[1, 1].scatter(x_1_1, neg_signal, color='r', s=20)
-        axis[1, 1].set_title(shared_dict[5][1])
-
-        x_1_2 = list(range(len(shared_dict[6][0])))
-
-        pos_signal = shared_dict[6][0].copy()
-        neg_signal = shared_dict[6][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-        
-        axis[1, 2].plot(x_1_2, shared_dict[6][0], color='black')
-        axis[1, 2].scatter(x_1_2, pos_signal, color='g', s=20)
-        axis[1, 2].scatter(x_1_2, neg_signal, color='r', s=20)
-        axis[1, 2].set_title(shared_dict[6][1])
-
-        x_1_3 = list(range(len(shared_dict[7][0])))
-
-        pos_signal = shared_dict[7][0].copy()
-        neg_signal = shared_dict[7][0].copy()
-
-        pos_signal = [np.nan if i < 1000 else i for i in pos_signal]
-        neg_signal = [np.nan if i >= 1000 else i for i in neg_signal]
-    
-        axis[1, 3].plot(x_1_3, shared_dict[7][0], color='black')
-        axis[1, 3].scatter(x_1_3, pos_signal, color='g', s=20)
-        axis[1, 3].scatter(x_1_3, neg_signal, color='r', s=20)
-        axis[1, 3].set_title(shared_dict[7][1])
+            axis[f_axis[i][0], f_axis[i][1]].plot(x, y, color='black')
+            axis[f_axis[i][0], f_axis[i][1]].scatter(x, pos_signal, color='g', s=20)
+            axis[f_axis[i][0], f_axis[i][1]].scatter(x, neg_signal, color='r', s=20)
+            axis[f_axis[i][0], f_axis[i][1]].set_title(folders[i])
 
         plt.pause(0.5)
         time.sleep(1)
@@ -142,7 +82,7 @@ class Evolution:
     model_performance: dict
     average_performance: list
 
-    live_data: dict
+    live_data: list
 
     current_gen: int
 
@@ -160,11 +100,11 @@ class Evolution:
 
         self.pop_size = 90
         self.population = []
-        self.model_performance = mp.Manager().dict()
+        self.model_performance = mp.Manager().list()
 
         self.live_data = mp.Manager().dict()
         for i in range(8):
-            self.live_data[i] = [[],[]]
+            self.live_data.append[[], "Empty"]
 
         for i in range(90):
             first = random.randint(int(max_first*0.1), max_first)
@@ -208,10 +148,10 @@ class Evolution:
     def train(self):
 
         pool = mp.Pool(processes=os.cpu_count())
+        
 
         for i in range(len(self.population)):
-            model_trainer.simulate(0.01, f"test_{self.current_gen}_{i}", 100, self.population[i], self.live_data)
-
+            #model_trainer.simulate(0.01, f"test_{self.current_gen}_{i}", 100, self.population[i], self.live_data)
             
             self.model_performance[f"test_{self.current_gen}_{i}"] = []
             pool.apply_async(
@@ -220,14 +160,14 @@ class Evolution:
                             0.01, 
                             f"test_{self.current_gen}_{i}", 
                             100, 
-                            self.population[i],
-                            self.live_data
+                            self.population[i]
                         )
                     )
             
+            
         p = mp.Process(target=live_graph, args=(self.live_data, ))
         p.start()
-            
+
         pool.close()
         pool.join()
 
