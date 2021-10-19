@@ -72,11 +72,9 @@ def live_graph():
                 y_max = list(pickle.load(f))
             x = list(range(len(y)))
 
-            print(folders[i] + ": " + str(y))
-
             if -1 in y:
                 folders[i] = find_new_folder(completed)
-                # Reset the plot somehow 
+                axis[f_axis[i][0], f_axis[i][1]].clear()
                 continue
 
             axis[f_axis[i][0], f_axis[i][1]].plot(x, y, color='blue')
