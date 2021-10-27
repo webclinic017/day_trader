@@ -28,7 +28,6 @@ def find_new_folder(completed: list):
     return ""
 
 
-
 def live_graph():
     
 
@@ -82,7 +81,7 @@ def live_graph():
             axis[f_axis[i][0], f_axis[i][1]].set_title(folders[i])
 
         plt.pause(1)
-        
+
 
 class Evolution:
     
@@ -115,7 +114,12 @@ class Evolution:
             first = random.randint(int(max_first*0.1), max_first)
             second = random.randint(int(max_second*0.1), max_second)
             self.population.append([first, second])
-        
+
+    def save_test(self):
+
+        with open(f"models/test_{self.current_gen}.pkl", "wb") as f:
+            pickle.dump(self.model_performance, f) 
+
     def test_yearly(self):
 
         pool = mp.Pool(processes=os.cpu_count())
@@ -132,6 +136,8 @@ class Evolution:
             
         pool.close()
         pool.join()
+
+        self.save_test()
     
     def test_weekly(self):
 
@@ -150,13 +156,13 @@ class Evolution:
         pool.close()
         pool.join()
 
+        self.save_test()
+
     def train(self):
 
         pool = mp.Pool(processes=os.cpu_count())
-        
 
         for i in range(len(self.population)):
-            #model_trainer.simulate(0.01, f"test_{self.current_gen}_{i}", 100, self.population[i])
             
             self.model_performance[f"test_{self.current_gen}_{i}"] = []
             pool.apply_async(
