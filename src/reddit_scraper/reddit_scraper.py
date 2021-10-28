@@ -5,7 +5,26 @@ import praw
 import json
 import time
 from tqdm import tqdm
+import flair
+import multiprocessing as mp
 import os
+
+
+
+def comp_sent(data: list, shared_dict: dict, i: int):
+    
+    shared_dict[i] = []
+    flair_sentiment = flair.models.TextClassifier.load('en-sentiment')
+
+    
+    for k in tqdm(range(len(data))):
+        
+        s = flair.data.Sentence(data[k])
+        flair_sentiment.predict(s)
+        total_sentiment = s.labels
+        sentiment = int(str(total_sentiment[0]).split()[-1].replace("(", "").replace(")", ""))
+        shared_dict[i].append(sentiment)
+
 
 class ReditScraper():
 
@@ -14,9 +33,45 @@ class ReditScraper():
 
     def __init__(self) -> None:
         
-        self.connect()
-        self.scrape()
+        #self.connect()
+        #self.scrape()
+        self.sentiment_analysis()
 
+    def sentiment_analysis(self):
+
+        df = pd.read_csv("a.csv")
+
+        text_list = list(df["selftext"])
+        inc_size = int(len(text_list)/8)
+
+        pool = mp.Pool(os.cpu_count())
+        shared_dict = mp.Manager().dict()
+
+        for i in range(os.cpu_count()):
+            
+            start = i * inc_size
+            end = (i+1) * inc_size
+
+            if i == os.cpu_count() - 1:
+                pool.apply_async(func=comp_sent, args=(text_list[start:], shared_dict, i,))
+            else:
+                pool.apply_async(func=comp_sent, args=(text_list[start:end], shared_dict, i,))
+        
+        pool.close()
+        pool.join()
+
+        combined_sent =[]
+
+        for index in shared_dict:
+            for sentiment in shared_dict[index]:
+                combined_sent.append(sentiment)
+        
+        df["sentiment"] = combined_sent
+
+        df.to_csv("sentiment.csv")
+
+
+        
     def scrape(self):
         
         # Scrape for each hour and then combine the results together into one big df, just delete repeats
