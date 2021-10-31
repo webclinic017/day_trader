@@ -18,11 +18,23 @@ def comp_sent(data: list, shared_dict: dict, i: int):
 
     
     for k in tqdm(range(len(data))):
-        
-        s = flair.data.Sentence(data[k])
+       
+        s = flair.data.Sentence(str(data[k]))
         flair_sentiment.predict(s)
         total_sentiment = s.labels
-        sentiment = int(str(total_sentiment[0]).split()[-1].replace("(", "").replace(")", ""))
+
+        if total_sentiment:
+
+            if "NEGATIVE" in str(total_sentiment):
+                sentiment = -float(str(total_sentiment[0]).split()[-1].replace("(", "").replace(")", ""))
+            elif "POSITIVE" in str(total_sentiment):
+                sentiment = float(str(total_sentiment[0]).split()[-1].replace("(", "").replace(")", ""))
+            else:
+                sentiment = 0
+        
+        else:
+            sentiment = 0
+
         shared_dict[i].append(sentiment)
 
 
@@ -66,7 +78,7 @@ class ReditScraper():
             for sentiment in shared_dict[index]:
                 combined_sent.append(sentiment)
         
-        df["sentiment"] = combined_sent
+        df["sentiment"] = pd.Series(combined_sent)
 
         df.to_csv("sentiment.csv")
 
