@@ -8,14 +8,13 @@ from tqdm import tqdm
 import flair
 import multiprocessing as mp
 import os
+import pickle
 
 
-
-def comp_sent(data: list, shared_dict: dict, i: int):
+def comp_sent(data: list, shared_list: dict, i: int):
     
-    shared_dict[i] = []
     flair_sentiment = flair.models.TextClassifier.load('en-sentiment')
-
+    temp = []
     
     for k in tqdm(range(len(data))):
        
@@ -35,7 +34,14 @@ def comp_sent(data: list, shared_dict: dict, i: int):
         else:
             sentiment = 0
 
-        shared_dict[i].append(sentiment)
+        
+        temp.append(sentiment)
+    
+    shared_list[i] = temp
+    print(temp)
+    print(shared_list[i])
+    with open(f"sentiment/{i}.pkl", 'wb') as f:
+        pickle.dump(shared_list[i], f)
 
 
 class ReditScraper():
@@ -49,35 +55,49 @@ class ReditScraper():
         #self.scrape()
         self.sentiment_analysis()
 
+    def group_by_hour():
+        
+        df = pd.read_csv("sentiment.csv")
+        
+        hour = []
+        current_hour: int
+        date_to_avg = {}
+
+        for index, row in df.iterrows():
+
+            current_data = row[""]
+
     def sentiment_analysis(self):
 
         df = pd.read_csv("a.csv")
 
         text_list = list(df["selftext"])
-        inc_size = int(len(text_list)/8)
+        inc_size = int(len(text_list)/100)
 
         pool = mp.Pool(os.cpu_count())
-        shared_dict = mp.Manager().dict()
+        shared_list = mp.Manager().list()
 
-        for i in range(os.cpu_count()):
+        for i in range(100):
             
             start = i * inc_size
             end = (i+1) * inc_size
+            shared_list.append([])
 
-            if i == os.cpu_count() - 1:
-                pool.apply_async(func=comp_sent, args=(text_list[start:], shared_dict, i,))
+            if i == 99:
+                pool.apply_async(func=comp_sent, args=(text_list[start:], shared_list, i,))
             else:
-                pool.apply_async(func=comp_sent, args=(text_list[start:end], shared_dict, i,))
+                pool.apply_async(func=comp_sent, args=(text_list[start:end], shared_list, i,))
         
         pool.close()
         pool.join()
 
         combined_sent =[]
 
-        for index in shared_dict:
-            for sentiment in shared_dict[index]:
+        for i in range(len(shared_list)):
+            for sentiment in shared_list[i]:
                 combined_sent.append(sentiment)
         
+
         df["sentiment"] = pd.Series(combined_sent)
 
         df.to_csv("sentiment.csv")
