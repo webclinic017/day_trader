@@ -96,6 +96,9 @@ Please see this document for a detailed explanation on each enviroment and model
 
     https://docs.google.com/document/d/1lvRM6XtqxV6H4eJls4FsWzJUNFcDfPCCc9m46HDDoeo/edit?usp=sharing 
 
+Please refrence this document for model training and performance tracking
+    https://docs.google.com/document/d/1bdCvDyaqvKDXc7C1p2EyDhswiw93gYrBEnMIBK_-0oQ/edit?usp=sharing
+
 
 Please view the following document for a comprehesnive test list and analysis of past configurations and performances of the model:
 ```
