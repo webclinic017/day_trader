@@ -9,6 +9,7 @@ import flair
 import multiprocessing as mp
 import os
 import pickle
+import numpy as np
 
 
 def comp_sent(data: list, shared_list: dict, i: int):
@@ -53,19 +54,37 @@ class ReditScraper():
         
         #self.connect()
         #self.scrape()
-        self.sentiment_analysis()
+        self.group_by_hour()
 
-    def group_by_hour():
+    def group_by_hour(self):
         
         df = pd.read_csv("sentiment.csv")
-        
-        hour = []
-        current_hour: int
-        date_to_avg = {}
+        df["created_time"] = pd.to_datetime(df["created_time"])
 
+        master = {}
+        
         for index, row in df.iterrows():
 
-            current_data = row[""]
+            date = datetime(row["created_time"].year, row["created_time"].month, row["created_time"].day, row["created_time"].hour)
+            print(f"{date}: {row['sentiment']}")
+            
+            if(date not in master):
+                master[date] = []
+            
+            master[date].append(float(row["sentiment"]))
+        
+        for key in master:
+            master[key] = np.mean(master[key])
+            print(f"{key}: {master[key]}")
+        
+        with open("hour_to_sentiment.pkl", "wb") as f:
+            pickle.dump(master, f)
+
+
+
+        
+
+       
 
     def sentiment_analysis(self):
 
