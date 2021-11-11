@@ -5,3 +5,8 @@ src/Training/Purple-Elephant/models
 src/Training/Red-Snake/models
 /lib/
 /bin/
+src/Training/Blue-Snake/cache/hour_to_sentiment.pkl
+src/reddit_scraper/sentiment/*
+src/reddit_scraper/a
+src/reddit_scraper/sentiment.csv
+src/reddit_scraper/hour_to_sentiment.pkl 

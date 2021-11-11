@@ -54,15 +54,6 @@ class Model():
         model.add(LSTM(50, activation='relu', return_sequences=True))
         model.add(keras.layers.Dropout(0.2))
 
-        model.add(LSTM(50, activation='relu', return_sequences=True))
-        model.add(keras.layers.Dropout(0.2))
-
-        model.add(LSTM(50, activation='relu', return_sequences=True))
-        model.add(keras.layers.Dropout(0.2))
-
-        model.add(LSTM(50, activation='relu', return_sequences=True))
-        model.add(keras.layers.Dropout(0.2))
-
         model.add(keras.layers.Dense(action_shape, activation='softmax'))
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
